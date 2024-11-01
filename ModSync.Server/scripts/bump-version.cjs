@@ -1,6 +1,5 @@
 ﻿const inc = require("semver/functions/inc");
 const valid = require("semver/functions/valid");
-const path = require("node:path");
 const { pushd, popd, sed } = require("shelljs");
 
 const packageJson = require("../package.json");
@@ -27,12 +26,6 @@ sed(
 );
 
 pushd("-q", "../ModSync");
-sed(
-	"-i",
-	`"${currentVersion}"`,
-	`"${newVersion}"`,
-	"Properties/AssemblyInfo.cs",
-);
 sed("-i", `"${currentVersion}"`, `"${newVersion}"`, "Plugin.cs");
 popd("-q");
 
