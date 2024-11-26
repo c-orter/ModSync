@@ -64,7 +64,9 @@ const DEFAULT_CONFIG = `{
 		"user/mods/**/node_modules",
 		"user/mods/**/*.js",
 		"user/mods/**/*.js.map",
-		"**/*:Zone.Identifier"
+		"**/*:Zone.Identifier",
+		// acidphantasm-progressivebotsystem logs
+		"user/mods/acidphantasm-progressivebotsystem/logs"
 	]
 }`;
 
