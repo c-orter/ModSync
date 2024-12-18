@@ -36,6 +36,8 @@ public class Plugin : BaseUnityPlugin
     private static readonly List<string> DEDICATED_DEFAULT_EXCLUSIONS =
     [
         "BepInEx/plugins/AmandsGraphics.dll",
+        "BepInEx/plugins/AmandsSense.dll",
+        "BepInEx/plugins/Sense",
         "BepInEx/plugins/MoreCheckmarks",
         "BepInEx/plugins/kmyuhkyuk-EFTApi",
         "BepInEx/plugins/DynamicMaps",
