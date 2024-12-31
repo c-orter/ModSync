@@ -1,17 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# 
+# Visual Studio Version 17
 VisualStudioVersion = 17.5.002.0
-MinimumVisualStudioVersion = 
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModSync", "ModSync\ModSync.csproj", "{F4413AE8-F4FB-4D5C-8CCD-154AA2B13336}"
-EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ModSync.Utility", "ModSync.Utility\ModSync.Utility.shproj", "{C5E66358-785A-4036-97D5-FF728AD9E98B}"
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModSync.Plugin", "ModSync.Plugin\ModSync.Plugin.csproj", "{F4413AE8-F4FB-4D5C-8CCD-154AA2B13336}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModSync.Updater", "ModSync.Updater\ModSync.Updater.csproj", "{E3525A90-0BF4-44AD-BDC9-0BE6AEBDFBF9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModSync.Tests", "ModSync.Tests\ModSync.Tests.csproj", "{CD7B7113-E4C1-4A32-94F3-93E849213668}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModSync.HashTester", "ModSync.HashTester\ModSync.HashTester.csproj", "{2265D81E-D9CB-4AAD-9263-7E4BB7AB006E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModSync.Core", "ModSync.Core\ModSync.Core.csproj", "{C74B9048-B1C5-4AD8-97D8-F640E867DA9A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,8 +35,18 @@ Global
 		{2265D81E-D9CB-4AAD-9263-7E4BB7AB006E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2265D81E-D9CB-4AAD-9263-7E4BB7AB006E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2265D81E-D9CB-4AAD-9263-7E4BB7AB006E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C74B9048-B1C5-4AD8-97D8-F640E867DA9A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C74B9048-B1C5-4AD8-97D8-F640E867DA9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C74B9048-B1C5-4AD8-97D8-F640E867DA9A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C74B9048-B1C5-4AD8-97D8-F640E867DA9A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		ModSync.Utility\ModSync.Utility.projitems*{2265d81e-d9cb-4aad-9263-7e4bb7ab006e}*SharedItemsImports = 5
+		ModSync.Core\ModSync.Core.projitems*{310a98a3-5485-4b45-9906-5a8405c4aac1}*SharedItemsImports = 13
+		ModSync.Utility\ModSync.Utility.projitems*{c5e66358-785a-4036-97d5-ff728ad9e98b}*SharedItemsImports = 13
+		ModSync.Utility\ModSync.Utility.projitems*{f4413ae8-f4fb-4d5c-8ccd-154aa2b13336}*SharedItemsImports = 5
 	EndGlobalSection
 EndGlobal

@@ -1,4 +1,4 @@
-﻿namespace ModSync.Test;
+﻿namespace ModSync.Tests;
 
 public static class TestUtils
 {

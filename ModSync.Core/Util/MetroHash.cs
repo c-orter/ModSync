@@ -1,4 +1,4 @@
-﻿namespace ModSync.Utility;
+﻿namespace ModSync.Core;
 
 using System;
 using System.Runtime.CompilerServices;

@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using ModSync.Utility;
+using ModSync.Core.Util;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using SPT.Common.Utils;
 
-namespace ModSync;
+namespace ModSync.Core;
 
-public class Migrator(string baseDir)
+public class Migrator(string baseDir, ILogger logger)
 {
     private string MODSYNC_DIR => Path.Combine(baseDir, "ModSync_Data");
     private string VERSION_PATH => Path.Combine(MODSYNC_DIR, "Version.txt");
@@ -32,15 +32,15 @@ public class Migrator(string baseDir)
                     return persist["version"].Value<int>() switch
                     {
                         7 => Version.Parse("0.7.0"),
-                        _ => Version.Parse("0.0.0")
+                        _ => Version.Parse("0.0.0"),
                     };
                 }
             }
         }
         catch (Exception e)
         {
-            Plugin.Logger.LogWarning("Failed to identify previous version. Cleaning up and attempting to continue.");
-            Plugin.Logger.LogWarning(e);
+            logger.LogWarning("Failed to identify previous version. Cleaning up and attempting to continue.");
+            logger.LogWarning(e);
         }
 
         return Version.Parse("0.0.0");
@@ -89,24 +89,24 @@ public class Migrator(string baseDir)
                 var syncPath = syncPaths.Find(s => property.Name.StartsWith($"{s.path}\\"));
                 if (syncPath == null)
                 {
-                    Plugin.Logger.LogWarning($"Could not migrate previous sync of '{property.Name}'. Does not match any current sync paths.");
+                    logger.LogWarning($"Could not migrate previous sync of '{property.Name}'. Does not match any current sync paths.");
                     continue;
                 }
 
                 var modFile = (JObject)property.Value;
                 if (!modFile.ContainsKey("crc"))
                 {
-                    Plugin.Logger.LogWarning($"Could not migrate previous sync of '{property.Name}'. Does not contain crc.");
+                    logger.LogWarning($"Could not migrate previous sync of '{property.Name}'. Does not contain crc.");
                     continue;
                 }
 
-                (newPreviousSync.Property(syncPath.path)!.Value as JObject)!.Add(property.Name, new JObject() { ["crc"] = modFile["crc"]!.Value<uint>(), });
+                (newPreviousSync.Property(syncPath.path)!.Value as JObject)!.Add(property.Name, new JObject() { ["crc"] = modFile["crc"]!.Value<uint>() });
             }
 
             if (!Directory.Exists(MODSYNC_DIR))
                 Directory.CreateDirectory(MODSYNC_DIR);
 
-            File.WriteAllText(PREVIOUS_SYNC_PATH, Json.Serialize(newPreviousSync));
+            File.WriteAllText(PREVIOUS_SYNC_PATH, JsonConvert.SerializeObject(newPreviousSync));
             File.WriteAllText(VERSION_PATH, pluginVersion.ToString());
 
             foreach (var file in CLEANUP_FILES.Where(File.Exists))
@@ -130,12 +130,12 @@ public class Migrator(string baseDir)
                 }
             }
 
-            File.WriteAllText(PREVIOUS_SYNC_PATH, Json.Serialize(previousSync));
+            File.WriteAllText(PREVIOUS_SYNC_PATH, JsonConvert.SerializeObject(previousSync));
             File.WriteAllText(VERSION_PATH, pluginVersion.ToString());
         }
         else if (oldVersion.Minor == pluginVersion.Minor && oldVersion != pluginVersion)
         {
-            Plugin.Logger.LogWarning("Previous sync was made with a different version of the plugin. This may cause issues. Continuing...");
+            logger.LogWarning("Previous sync was made with a different version of the plugin. This may cause issues. Continuing...");
         }
     }
 }

@@ -1,44 +1,59 @@
 ﻿using System;
 using UnityEngine;
 
-namespace ModSync.UI;
+namespace ModSync.Plugin.UI;
 
-public class UpdateWindow(string title, string message, string continueText = "CONTINUE", string cancelText = "SKIP UPDATE")
+public class TextAlertWindow(
+    string title,
+    string message,
+    Vector2 size,
+    string continueText = "CONTINUE",
+    string cancelText = "SKIP UPDATE",
+    bool showTooltip = true,
+    bool centerText = false
+)
 {
-    private readonly UpdateBox alertBox = new(title, message, continueText, cancelText);
+    private readonly TextAlertBox alertBox = new(title, message, showTooltip, centerText, continueText, cancelText);
     public bool Active { get; private set; }
-
-    public void Show() => Active = true;
 
     public void Hide() => Active = false;
 
-    public void Draw(string updatesText, Action onAccept, Action onDecline)
+    private string updatesText;
+    private Action onAccept;
+    private Action onDecline;
+
+    public void Show(string updatesText, Action onAccept, Action onDecline)
+    {
+        this.updatesText = updatesText;
+        this.onAccept = onAccept;
+        this.onDecline = onDecline;
+        Active = true;
+    }
+
+    public void Draw()
     {
         float screenWidth = Screen.width;
         float screenHeight = Screen.height;
 
-        const float windowWidth = 800f;
-        const float windowHeight = 640f;
-
-        GUILayout.BeginArea(new Rect((screenWidth - windowWidth) / 2f, (screenHeight - windowHeight) / 2f, windowWidth, windowHeight));
-        alertBox.Draw(new Vector2(800f, 640f), updatesText, onAccept, onDecline);
+        GUILayout.BeginArea(new Rect((screenWidth - size.x) / 2f, (screenHeight - size.y) / 2f, size.x, size.y));
+        alertBox.Draw(size, updatesText, onAccept, onDecline);
         GUILayout.EndArea();
     }
 }
 
-internal class UpdateBox(string title, string message, string continueText, string cancelText) : Bordered
+internal class TextAlertBox(string title, string message, bool showTooltip, bool centerText, string continueText, string cancelText) : Bordered
 {
-    private readonly UpdateButton acceptButton = new(continueText, Colors.Primary, Colors.PrimaryLight, Colors.Grey, Colors.PrimaryDark);
-    private readonly UpdateButton declineButton = new(
+    private readonly TextAlertButton acceptButton = new(continueText, Colors.Primary, Colors.PrimaryLight, Colors.Grey, Colors.PrimaryDark);
+    private readonly TextAlertButton declineButton = new(
         cancelText,
         Colors.Secondary,
         Colors.SecondaryLight,
         Colors.Grey,
         Colors.SecondaryDark,
-        "Enforced updates will still be downloaded."
+        showTooltip ? "Enforced updates will still be downloaded." : null
     );
 
-    private readonly UpdateButtonTooltip updateButtonTooltip = new();
+    private readonly TextAlertButtonTooltip updateButtonTooltip = new();
 
     private const int borderThickness = 2;
     private Vector2 scrollPosition = Vector2.zero;
@@ -79,9 +94,10 @@ internal class UpdateBox(string title, string message, string continueText, stri
 
         GUIStyle scrollStyle = new()
         {
-            alignment = TextAnchor.UpperLeft,
+            alignment = centerText ? TextAnchor.MiddleCenter : TextAnchor.UpperLeft,
             fontSize = 16,
             normal = { textColor = Colors.White },
+            wordWrap = true,
         };
 
         Rect titleRect = new(infoRect.x, infoRect.y, infoRect.width, infoRect.height / 2);
@@ -105,7 +121,7 @@ internal class UpdateBox(string title, string message, string continueText, stri
             focused = { background = Utility.GetTexture(Colors.Primary.SetAlpha(0.5f)) },
         };
 
-        var scrollHeight = scrollStyle.CalcHeight(new GUIContent(updatesText), alertRect.width - 40f);
+        var scrollHeight = Math.Max(scrollRect.height - 32f, scrollStyle.CalcHeight(new GUIContent(updatesText), alertRect.width - 40f));
         GUI.DrawTexture(scrollRect, Utility.GetTexture(Color.black.SetAlpha(0.5f)), ScaleMode.StretchToFill, true, 0);
 
         var oldSkin = GUI.skin;
@@ -116,7 +132,7 @@ internal class UpdateBox(string title, string message, string continueText, stri
             scrollPosition,
             new Rect(0f, 0f, alertRect.width, scrollHeight + 32f),
             false,
-            true,
+            false,
             GUIStyle.none,
             scrollbarStyle
         );
@@ -124,7 +140,10 @@ internal class UpdateBox(string title, string message, string continueText, stri
         GUI.Label(new Rect(16f, 16f, alertRect.width - 56f, scrollHeight), updatesText, scrollStyle);
         GUI.EndScrollView();
 
-        if (onDecline != null && declineButton.Draw(new Rect(actionsRect.x, actionsRect.y, actionsRect.width / 2, actionsRect.height)))
+        if (
+            onDecline != null
+            && declineButton.Draw(new Rect(actionsRect.x, actionsRect.y, onAccept == null ? actionsRect.width : actionsRect.width / 2, actionsRect.height))
+        )
             onDecline();
         if (
             onAccept != null
@@ -140,11 +159,12 @@ internal class UpdateBox(string title, string message, string continueText, stri
             onAccept();
 
         var tooltipRect = new Rect(Event.current.mousePosition.x + 2f, Event.current.mousePosition.y - 20f, 275f, 20f);
-        updateButtonTooltip.Draw(tooltipRect, GUI.tooltip);
+        if (showTooltip)
+            updateButtonTooltip.Draw(tooltipRect, GUI.tooltip);
     }
 }
 
-internal class UpdateButton(string text, Color normalColor, Color hoverColor, Color activeColor, Color borderColor, string tooltip = null) : Bordered
+internal class TextAlertButton(string text, Color normalColor, Color hoverColor, Color activeColor, Color borderColor, string tooltip = null) : Bordered
 {
     private const int borderThickness = 2;
     private bool active;
@@ -188,7 +208,7 @@ internal class UpdateButton(string text, Color normalColor, Color hoverColor, Co
     }
 }
 
-internal class UpdateButtonTooltip : Bordered
+internal class TextAlertButtonTooltip : Bordered
 {
     private const int borderThickness = 1;
 

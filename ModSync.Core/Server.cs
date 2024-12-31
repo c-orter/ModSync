@@ -5,15 +5,14 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using ModSync.Utility;
-using SPT.Common.Http;
-using SPT.Common.Utils;
+using ModSync.Core.Util;
+using Newtonsoft.Json;
 
-namespace ModSync;
+namespace ModSync.Core;
 
 using SyncPathModFiles = Dictionary<string, Dictionary<string, ModFile>>;
 
-public class Server(Version pluginVersion)
+public class Server(Version pluginVersion, string hostname, ILogger logger)
 {
     private async Task<string> GetJson(string path)
     {
@@ -22,12 +21,12 @@ public class Server(Version pluginVersion)
             using var client = new HttpClient();
             client.DefaultRequestHeaders.Add("modsync-version", pluginVersion.ToString());
             client.Timeout = TimeSpan.FromMinutes(5);
-            var json = await client.GetStringAsync($"{RequestHandler.Host}{path}");
+            var json = await client.GetStringAsync($"{hostname}{path}");
             return json;
         }
         catch (Exception e)
         {
-            Plugin.Logger.LogError($"There was an error performing request.\n{e.Message}\n{e.StackTrace}");
+            logger.LogError($"There was an error performing request.\n{e.Message}\n{e.StackTrace}");
             throw;
         }
     }
@@ -38,11 +37,11 @@ public class Server(Version pluginVersion)
             return;
 
         var downloadPath = Path.Combine(downloadDir, file);
-        VFS.CreateDirectory(downloadPath.GetDirectory());
+        Directory.CreateDirectory(Directory.GetParent(downloadPath).FullName);
 
         var retryCount = 0;
 
-        await limiter.WaitAsync();
+        await limiter.WaitAsync(cancellationToken);
         while (!cancellationToken.IsCancellationRequested)
         {
             try
@@ -50,7 +49,27 @@ public class Server(Version pluginVersion)
                 using var client = new HttpClient();
                 if (retryCount > 0)
                     client.Timeout = TimeSpan.FromMinutes(10);
-                using var responseStream = await client.GetStreamAsync($"{RequestHandler.Host}/modsync/fetch/{file}");
+                using var response = await client.GetAsync($"{hostname}/modsync/fetch/{file}", cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+
+                    if (retryCount < 5 && !cancellationToken.IsCancellationRequested)
+                    {
+                        logger.LogError($"Failed to download '{file}'. Retrying ({retryCount + 1}/5)...");
+                        logger.LogDebug(content);
+                        await Task.Delay(500, cancellationToken);
+                        retryCount++;
+                        continue;
+                    }
+
+                    logger.LogError($"Failed to download '{file}'. Exiting...");
+                    logger.LogError(content);
+                    throw new DownloadException(content);
+                }
+
+                using var responseStream = await response.Content.ReadAsStreamAsync();
                 using var fileStream = new FileStream(downloadPath, FileMode.Create);
 
                 if ((int)responseStream.Length > 0)
@@ -59,45 +78,35 @@ public class Server(Version pluginVersion)
                 limiter.Release();
                 return;
             }
-            catch (Exception e)
+            catch (TaskCanceledException)
             {
-                if (e is TaskCanceledException && cancellationToken.IsCancellationRequested)
+                if (cancellationToken.IsCancellationRequested)
                     throw;
-
-                if (retryCount < 5)
-                {
-                    Plugin.Logger.LogError($"Failed to download '{file}'. Retrying ({retryCount + 1}/5)...");
-                    Plugin.Logger.LogDebug(e);
-                    await Task.Delay(500, cancellationToken);
-                    retryCount++;
-                    continue;
-                }
-
-                Plugin.Logger.LogError($"Failed to download '{file}'. Exiting...");
-                Plugin.Logger.LogError(e);
-                throw;
             }
         }
+
+        limiter.Release();
     }
 
-    public async Task<string> GetModSyncVersion()
+    public async Task<string> GetVersion()
     {
-        return Json.Deserialize<string>(await GetJson("/modsync/version"));
+        return JsonConvert.DeserializeObject<string>(await GetJson("/modsync/version"));
     }
 
-    public async Task<List<SyncPath>> GetModSyncPaths()
+    public async Task<List<SyncPath>> GetPaths()
     {
-        return Json.Deserialize<List<SyncPath>>(await GetJson("/modsync/paths"));
+        return JsonConvert.DeserializeObject<List<SyncPath>>(await GetJson("/modsync/paths"));
     }
 
-    public async Task<List<string>> GetModSyncExclusions()
+    public async Task<List<string>> GetExclusions()
     {
-        return Json.Deserialize<List<string>>(await GetJson("/modsync/exclusions"));
+        return JsonConvert.DeserializeObject<List<string>>(await GetJson("/modsync/exclusions"));
     }
 
     public async Task<SyncPathModFiles> GetRemoteModFileHashes(List<SyncPath> syncPaths)
     {
-        return Json.Deserialize<SyncPathModFiles>(
+        return JsonConvert
+            .DeserializeObject<SyncPathModFiles>(
                 await GetJson($"/modsync/hashes?path={string.Join("&path=", syncPaths.Select(path => Uri.EscapeUriString(path.path.Replace(@"\", "/"))))}")
             )
             .ToDictionary(

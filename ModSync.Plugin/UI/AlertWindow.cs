@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace ModSync.UI;
+namespace ModSync.Plugin.UI;
 
 public class AlertWindow(Vector2 size, string title, string message, string buttonText = "EXIT GAME")
 {
@@ -9,11 +9,18 @@ public class AlertWindow(Vector2 size, string title, string message, string butt
     private readonly AlertButton alertButton = new(buttonText);
     public bool Active { get; private set; }
 
-    public void Show() => Active = true;
-
     public void Hide() => Active = false;
 
-    public void Draw(Action restartAction)
+    private Action restartAction;
+
+    public void Show(Action restartAction)
+    {
+        this.restartAction = restartAction;
+
+        Active = true;
+    }
+
+    public void Draw()
     {
         float screenWidth = Screen.width;
         float screenHeight = Screen.height;

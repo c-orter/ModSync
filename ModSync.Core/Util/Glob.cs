@@ -1,4 +1,4 @@
-﻿namespace ModSync.Utility;
+﻿namespace ModSync.Core;
 
 using System;
 using System.Collections.Generic;
@@ -13,13 +13,12 @@ public static partial class Glob
     private const string RestPattern = "(.+)";
 
     private static readonly Regex GlobRE = new(@"(?:\*\*\/|\*\*|\*)", RegexOptions.Compiled);
-    private static readonly Dictionary<string, string> GlobPatterns =
-        new()
-        {
-            ["*"] = "([^/]+)", // no backslashes
-            ["**"] = "(.+/)?([^/]+)", // short for "**/*"
-            ["**/"] = "(.+/)?" // one or more directories
-        };
+    private static readonly Dictionary<string, string> GlobPatterns = new()
+    {
+        ["*"] = "([^/]+)", // no backslashes
+        ["**"] = "(.+/)?([^/]+)", // short for "**/*"
+        ["**/"] = "(.+/)?", // one or more directories
+    };
 
     private static string MapToPattern(string str)
     {

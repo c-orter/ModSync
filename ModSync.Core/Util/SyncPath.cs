@@ -1,4 +1,4 @@
-﻿namespace ModSync.Utility;
+﻿namespace ModSync.Core;
 
 public class SyncPath(string path, string name = "", bool enabled = true, bool enforced = false, bool silent = false, bool restartRequired = true)
 {

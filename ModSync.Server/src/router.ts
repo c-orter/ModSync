@@ -9,6 +9,8 @@ import { HttpError, winPath } from "./utility/misc";
 import type { ILogger } from "@spt/models/spt/utils/ILogger";
 import type { PreSptModLoader } from "@spt/loaders/PreSptModLoader";
 import type { HttpServerHelper } from "@spt/helpers/HttpServerHelper";
+import { LogTextColor } from "@spt/models/spt/logging/LogTextColor";
+import { LogBackgroundColor } from "@spt/models/spt/logging/LogBackgroundColor";
 
 const FALLBACK_SYNCPATHS: Record<string, object> = {};
 
@@ -20,22 +22,22 @@ FALLBACK_SYNCPATHS[undefined] = [
 FALLBACK_SYNCPATHS["0.8.0"] =
 	FALLBACK_SYNCPATHS["0.8.1"] =
 	FALLBACK_SYNCPATHS["0.8.2"] =
-	[
-		{
-			enabled: true,
-			enforced: true,
-			path: "BepInEx\\plugins\\Corter-ModSync.dll",
-			restartRequired: true,
-			silent: false,
-		},
-		{
-			enabled: true,
-			enforced: true,
-			path: "ModSync.Updater.exe",
-			restartRequired: false,
-			silent: false,
-		},
-	];
+		[
+			{
+				enabled: true,
+				enforced: true,
+				path: "BepInEx\\plugins\\Corter-ModSync.dll",
+				restartRequired: true,
+				silent: false,
+			},
+			{
+				enabled: true,
+				enforced: true,
+				path: "ModSync.Updater.exe",
+				restartRequired: false,
+				silent: false,
+			},
+		];
 
 const FALLBACK_HASHES: Record<string, object> = {};
 
@@ -47,17 +49,17 @@ FALLBACK_HASHES[undefined] = {
 FALLBACK_HASHES["0.8.0"] =
 	FALLBACK_HASHES["0.8.1"] =
 	FALLBACK_HASHES["0.8.2"] =
-	{
-		"BepInEx\\plugins\\Corter-ModSync.dll": {
+		{
 			"BepInEx\\plugins\\Corter-ModSync.dll": {
-				crc: 999999999,
-				nosync: false,
+				"BepInEx\\plugins\\Corter-ModSync.dll": {
+					crc: 999999999,
+					nosync: false,
+				},
 			},
-		},
-		"ModSync.Updater.exe": {
-			"ModSync.Updater.exe": { crc: 999999999, nosync: false },
-		},
-	};
+			"ModSync.Updater.exe": {
+				"ModSync.Updater.exe": { crc: 999999999, nosync: false },
+			},
+		};
 
 export class Router {
 	constructor(
@@ -68,7 +70,7 @@ export class Router {
 		private httpServerHelper: HttpServerHelper,
 		private modImporter: PreSptModLoader,
 		private logger: ILogger,
-	) { }
+	) {}
 
 	/**
 	 * @internal
@@ -185,10 +187,14 @@ export class Router {
 			this.config.syncPaths,
 		);
 
+		if (+path.basename(filePath) % 10 === 0) {
+			throw new HttpError(500, `Corter-ModSync: Get Pranked '${filePath}'!`);
+		}
+
 		if (!this.vfs.exists(sanitizedPath))
 			throw new HttpError(
 				404,
-				`Attempt to access non-existent path ${filePath}`,
+				`Corter-ModSync: Attempt to access non-existent path ${filePath}`,
 			);
 
 		try {
@@ -197,7 +203,7 @@ export class Router {
 			res.setHeader(
 				"Content-Type",
 				this.httpServerHelper.getMimeText(path.extname(filePath)) ||
-				"text/plain",
+					"text/plain",
 			);
 			res.setHeader("Content-Length", fileStats.size);
 			return this.httpFileUtil.sendFileAsync(res, sanitizedPath);
@@ -209,7 +215,7 @@ export class Router {
 		}
 	}
 
-	public handleRequest(req: IncomingMessage, res: ServerResponse) {
+	public async handleRequest(req: IncomingMessage, res: ServerResponse) {
 		const routeTable = [
 			{
 				route: glob("/modsync/version"),
@@ -238,19 +244,25 @@ export class Router {
 		try {
 			for (const { route, handler } of routeTable) {
 				const matches = route.exec(url.pathname);
-				if (matches) return handler(req, res, matches, url.searchParams);
+				if (matches) return await handler(req, res, matches, url.searchParams);
 			}
 
 			throw new HttpError(404, "Corter-ModSync: Unknown route");
 		} catch (e) {
 			if (e instanceof Error)
 				this.logger.error(
-					`Corter-ModSync: Error when handling [${req.method} ${req.url}]:\n${e.message}\n${e.stack}`,
+					`Corter-ModSync: Error when handling [${req.method} ${req.url}]:\n${e.stack}`,
 				);
 
 			if (e instanceof HttpError) {
-				res.writeHead(e.code, e.codeMessage);
-				res.end(e.message);
+				try {
+					res.writeHead(e.code, e.codeMessage, {
+						"content-length": e.message.length,
+					});
+					res.end(e.message);
+				} catch (e) {
+					this.logger.error(`Corter-ModSync: Error in error handler ${e}`);
+				}
 			} else {
 				res.writeHead(500, "Internal server error");
 				res.end(

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace ModSync.UI;
+namespace ModSync.Plugin.UI;
 
 public static class Utility
 {

@@ -1,8 +1,9 @@
 ﻿using System.Text.RegularExpressions;
-using ModSync.Utility;
+using ModSync.Core;
+using ModSync.Core.Util;
 using Newtonsoft.Json;
 
-namespace ModSync.Test;
+namespace ModSync.Tests;
 
 using SyncPathFileList = Dictionary<string, List<string>>;
 using SyncPathModFiles = Dictionary<string, Dictionary<string, ModFile>>;
@@ -10,14 +11,19 @@ using SyncPathModFiles = Dictionary<string, Dictionary<string, ModFile>>;
 [TestFixture]
 public class IntegrationTests
 {
-    private static (SyncPathModFiles, List<string>) RunPlugin(
+    private readonly ILogger logger = new TestLogger();
+    private readonly Comparator comparator;
+
+    IntegrationTests()
+    {
+        comparator = new Comparator(logger);
+    }
+
+    private (SyncPathModFiles, List<string>) RunPlugin(
         string testPath,
         List<SyncPath> syncPaths,
         bool configDeleteRemovedFiles,
-        out SyncPathFileList addedFiles,
-        out SyncPathFileList updatedFiles,
-        out SyncPathFileList removedFiles,
-        out SyncPathFileList createdDirectories,
+        out Dictionary<SyncPath, SyncDiff> syncDiffs,
         ref List<string> downloadedFiles
     )
     {
@@ -39,24 +45,14 @@ public class IntegrationTests
 
         List<Regex> remoteExclusions = [Glob.Create("**/*.nosync"), Glob.Create("**/*.nosync.txt")];
 
-        var remoteModFiles = Sync.HashLocalFiles(remotePath, syncPaths, remoteExclusions, localExclusions).Result;
-        var localModFiles = Sync.HashLocalFiles(localPath, syncPaths, remoteExclusions, localExclusions).Result;
+        var remoteModFiles = comparator.HashLocalFiles(remotePath, syncPaths, remoteExclusions, localExclusions).Result;
+        var localModFiles = comparator.HashLocalFiles(localPath, syncPaths, remoteExclusions, localExclusions).Result;
 
-        Sync.CompareModFiles(
-            Path.Combine(testPath, "local"),
-            syncPaths,
-            localModFiles,
-            remoteModFiles,
-            previousSync,
-            out addedFiles,
-            out updatedFiles,
-            out removedFiles,
-            out createdDirectories
-        );
+        comparator.CompareModFiles(Path.Combine(testPath, "local"), syncPaths, localModFiles, remoteModFiles, previousSync, out syncDiffs);
 
-        downloadedFiles.AddRange(addedFiles.SelectMany(kvp => kvp.Value).Concat(updatedFiles.SelectMany(kvp => kvp.Value)));
+        downloadedFiles.AddRange(syncDiffs.SelectMany(kvp => kvp.Value.Added.Concat(kvp.Value.Updated)));
 
-        return (remoteModFiles, configDeleteRemovedFiles ? removedFiles.SelectMany(kvp => kvp.Value).ToList() : []);
+        return (remoteModFiles, configDeleteRemovedFiles ? syncDiffs.SelectMany(kvp => kvp.Value.Removed).ToList() : []);
     }
 
     [Test]
@@ -66,22 +62,17 @@ public class IntegrationTests
 
         List<string> downloadedFiles = [];
 
-        var (previousSync, filesToDelete) = RunPlugin(
-            testPath,
-            syncPaths: [new SyncPath("SAIN.dll")],
-            configDeleteRemovedFiles: true,
-            out var addedFiles,
-            out var updatedFiles,
-            out var removedFiles,
-            out _,
-            ref downloadedFiles
-        );
+        var syncPath = new SyncPath("SAIN.dll");
+
+        var (previousSync, filesToDelete) = RunPlugin(testPath, syncPaths: [syncPath], configDeleteRemovedFiles: true, out var syncDiffs, ref downloadedFiles);
+
+        var syncDiff = syncDiffs[syncPath];
 
         Assert.Multiple(() =>
         {
-            Assert.That(addedFiles["SAIN.dll"], Has.Count.EqualTo(1));
-            Assert.That(updatedFiles["SAIN.dll"], Is.Empty);
-            Assert.That(removedFiles["SAIN.dll"], Is.Empty);
+            Assert.That(syncDiff.Added, Has.Count.EqualTo(1));
+            Assert.That(syncDiff.Updated, Is.Empty);
+            Assert.That(syncDiff.Removed, Is.Empty);
 
             Assert.That(downloadedFiles, Has.Count.EqualTo(1));
             Assert.That(downloadedFiles, Does.Contain("SAIN.dll"));
@@ -100,22 +91,17 @@ public class IntegrationTests
 
         List<string> downloadedFiles = [];
 
-        var (previousSync, filesToDelete) = RunPlugin(
-            testPath,
-            syncPaths: [new SyncPath("plugins")],
-            configDeleteRemovedFiles: true,
-            out var addedFiles,
-            out var updatedFiles,
-            out var removedFiles,
-            out _,
-            ref downloadedFiles
-        );
+        var syncPath = new SyncPath("plugins");
+
+        var (previousSync, filesToDelete) = RunPlugin(testPath, syncPaths: [syncPath], configDeleteRemovedFiles: true, out var syncDiffs, ref downloadedFiles);
+
+        var syncDiff = syncDiffs[syncPath];
 
         Assert.Multiple(() =>
         {
-            Assert.That(addedFiles["plugins"], Has.Count.EqualTo(2));
-            Assert.That(updatedFiles["plugins"], Is.Empty);
-            Assert.That(removedFiles["plugins"], Is.Empty);
+            Assert.That(syncDiff.Added, Has.Count.EqualTo(2));
+            Assert.That(syncDiff.Updated, Is.Empty);
+            Assert.That(syncDiff.Removed, Is.Empty);
 
             Assert.That(downloadedFiles, Has.Count.EqualTo(2));
 
@@ -135,22 +121,17 @@ public class IntegrationTests
 
         List<string> downloadedFiles = [];
 
-        var (previousSync, filesToDelete) = RunPlugin(
-            testPath,
-            syncPaths: [new SyncPath("SAIN.dll")],
-            configDeleteRemovedFiles: true,
-            out var addedFiles,
-            out var updatedFiles,
-            out var removedFiles,
-            out _,
-            ref downloadedFiles
-        );
+        var syncPath = new SyncPath("SAIN.dll");
+
+        var (previousSync, filesToDelete) = RunPlugin(testPath, syncPaths: [syncPath], configDeleteRemovedFiles: true, out var syncDiffs, ref downloadedFiles);
+
+        var syncDiff = syncDiffs[syncPath];
 
         Assert.Multiple(() =>
         {
-            Assert.That(addedFiles["SAIN.dll"], Is.Empty);
-            Assert.That(updatedFiles["SAIN.dll"], Has.Count.EqualTo(1));
-            Assert.That(removedFiles["SAIN.dll"], Is.Empty);
+            Assert.That(syncDiff.Added, Is.Empty);
+            Assert.That(syncDiff.Updated, Has.Count.EqualTo(1));
+            Assert.That(syncDiff.Removed, Is.Empty);
 
             Assert.That(downloadedFiles, Has.Count.EqualTo(1));
             Assert.That(downloadedFiles, Does.Contain("SAIN.dll"));
@@ -169,22 +150,17 @@ public class IntegrationTests
 
         List<string> downloadedFiles = [];
 
-        var (previousSync, _) = RunPlugin(
-            testPath,
-            syncPaths: [new SyncPath("SAIN.dll")],
-            configDeleteRemovedFiles: true,
-            out var addedFiles,
-            out var updatedFiles,
-            out var removedFiles,
-            out _,
-            ref downloadedFiles
-        );
+        var syncPath = new SyncPath("SAIN.dll");
+
+        var (previousSync, _) = RunPlugin(testPath, syncPaths: [syncPath], configDeleteRemovedFiles: true, out var syncDiffs, ref downloadedFiles);
+
+        var syncDiff = syncDiffs[syncPath];
 
         Assert.Multiple(() =>
         {
-            Assert.That(addedFiles["SAIN.dll"], Is.Empty);
-            Assert.That(updatedFiles["SAIN.dll"], Is.Empty);
-            Assert.That(removedFiles["SAIN.dll"], Is.Empty);
+            Assert.That(syncDiff.Added, Is.Empty);
+            Assert.That(syncDiff.Updated, Is.Empty);
+            Assert.That(syncDiff.Removed, Is.Empty);
 
             Assert.That(downloadedFiles, Is.Empty);
             Assert.That(previousSync["SAIN.dll"]["SAIN.dll"].hash, Is.EqualTo("00d1413dcaf30500b65fc68446b10646"));
@@ -198,22 +174,17 @@ public class IntegrationTests
 
         List<string> downloadedFiles = [];
 
-        var (_, filesToDelete) = RunPlugin(
-            testPath,
-            syncPaths: [new SyncPath("SAIN.dll")],
-            configDeleteRemovedFiles: true,
-            out var addedFiles,
-            out var updatedFiles,
-            out var removedFiles,
-            out _,
-            ref downloadedFiles
-        );
+        var syncPath = new SyncPath("SAIN.dll");
+
+        var (_, filesToDelete) = RunPlugin(testPath, syncPaths: [syncPath], configDeleteRemovedFiles: true, out var syncDiffs, ref downloadedFiles);
+
+        var syncDiff = syncDiffs[syncPath];
 
         Assert.Multiple(() =>
         {
-            Assert.That(addedFiles["SAIN.dll"], Is.Empty);
-            Assert.That(updatedFiles["SAIN.dll"], Is.Empty);
-            Assert.That(removedFiles["SAIN.dll"], Has.Count.EqualTo(1));
+            Assert.That(syncDiff.Added, Is.Empty);
+            Assert.That(syncDiff.Updated, Is.Empty);
+            Assert.That(syncDiff.Removed, Has.Count.EqualTo(1));
 
             Assert.That(downloadedFiles, Is.Empty);
             Assert.That(filesToDelete, Is.EquivalentTo(new List<string> { "SAIN.dll" }));
@@ -227,22 +198,17 @@ public class IntegrationTests
 
         List<string> downloadedFiles = [];
 
-        RunPlugin(
-            testPath,
-            syncPaths: [new SyncPath("plugins")],
-            configDeleteRemovedFiles: true,
-            out var addedFiles,
-            out var updatedFiles,
-            out var removedFiles,
-            out _,
-            ref downloadedFiles
-        );
+        var syncPath = new SyncPath("plugins");
+
+        RunPlugin(testPath, syncPaths: [syncPath], configDeleteRemovedFiles: true, out var syncDiffs, ref downloadedFiles);
+
+        var syncDiff = syncDiffs[syncPath];
 
         Assert.Multiple(() =>
         {
-            Assert.That(addedFiles["plugins"], Is.Empty);
-            Assert.That(updatedFiles["plugins"], Has.Count.EqualTo(1));
-            Assert.That(removedFiles["plugins"], Is.Empty);
+            Assert.That(syncDiff.Added, Is.Empty);
+            Assert.That(syncDiff.Updated, Has.Count.EqualTo(1));
+            Assert.That(syncDiff.Removed, Is.Empty);
 
             Assert.That(downloadedFiles, Has.Count.EqualTo(1));
             Assert.That(downloadedFiles[0], Is.EqualTo(@"plugins\sain.dll"));
@@ -256,22 +222,19 @@ public class IntegrationTests
 
         List<string> downloadedFiles = [];
 
-        var (_, filesToDelete) = RunPlugin(
-            testPath,
-            syncPaths: [new SyncPath("plugins")],
-            configDeleteRemovedFiles: true,
-            out var addedFiles,
-            out var updatedFiles,
-            out var removedFiles,
-            out _,
-            ref downloadedFiles
-        );
+        var syncPath = new SyncPath("plugins");
+
+        var (_, filesToDelete) = RunPlugin(testPath, syncPaths: [syncPath], configDeleteRemovedFiles: true, out var syncDiffs, ref downloadedFiles);
+
+        var syncDiff = syncDiffs[syncPath];
 
         Assert.Multiple(() =>
         {
-            Assert.That(addedFiles["plugins"], Is.Empty);
-            Assert.That(updatedFiles["plugins"], Is.Empty);
-            Assert.That(removedFiles["plugins"], Is.Empty);
+            Assert.That(syncDiff.Added, Is.Empty);
+            Assert.That(syncDiff.Updated, Is.Empty);
+            Assert.That(syncDiff.Removed, Is.Empty);
+
+            Assert.That(downloadedFiles, Is.Empty);
             Assert.That(filesToDelete, Is.Empty);
         });
     }
@@ -285,21 +248,16 @@ public class IntegrationTests
 
         List<string> downloadedFiles = [];
 
-        RunPlugin(
-            testPath,
-            syncPaths: [new SyncPath("plugins")],
-            configDeleteRemovedFiles: true,
-            out _,
-            out _,
-            out _,
-            out var createdDirectories,
-            ref downloadedFiles
-        );
+        var syncPath = new SyncPath("plugins");
+
+        RunPlugin(testPath, syncPaths: [syncPath], configDeleteRemovedFiles: true, out var syncDiffs, ref downloadedFiles);
+
+        var syncDiff = syncDiffs[syncPath];
 
         Assert.Multiple(() =>
         {
-            Assert.That(createdDirectories["plugins"], Has.Count.EqualTo(1));
-            Assert.That(createdDirectories["plugins"][0], Is.EqualTo(@"plugins\TestMod\SuperImportantEmptyFolder"));
+            Assert.That(syncDiff.Created, Has.Count.EqualTo(1));
+            Assert.That(syncDiff.Created[0], Is.EqualTo(@"plugins\TestMod\SuperImportantEmptyFolder"));
         });
     }
 
@@ -314,21 +272,16 @@ public class IntegrationTests
 
         List<string> downloadedFiles = [];
 
-        RunPlugin(
-            testPath,
-            syncPaths: [new SyncPath("plugins")],
-            configDeleteRemovedFiles: true,
-            out _,
-            out _,
-            out _,
-            out var createdDirectories,
-            ref downloadedFiles
-        );
+        var syncPath = new SyncPath("plugins");
+
+        RunPlugin(testPath, syncPaths: [syncPath], configDeleteRemovedFiles: true, out var syncDiffs, ref downloadedFiles);
+
+        var syncDiff = syncDiffs[syncPath];
 
         Assert.Multiple(() =>
         {
-            Assert.That(createdDirectories["plugins"], Has.Count.EqualTo(0));
-            Assert.That(createdDirectories["plugins"], Has.No.Member(@"plugins\EmptyDirectory"));
+            Assert.That(syncDiff.Created, Has.Count.EqualTo(0));
+            Assert.That(syncDiff.Created, Has.No.Member(@"plugins\EmptyDirectory"));
         });
     }
 
@@ -339,21 +292,17 @@ public class IntegrationTests
 
         List<string> downloadedFiles = [];
 
-        RunPlugin(
-            testPath,
-            syncPaths: [new SyncPath("plugins", enforced: true)],
-            configDeleteRemovedFiles: true,
-            out _,
-            out var updatedFiles,
-            out var removedFiles,
-            out _,
-            ref downloadedFiles
-        );
+        var syncPath = new SyncPath("plugins", enforced: true);
+
+        RunPlugin(testPath, syncPaths: [syncPath], configDeleteRemovedFiles: true, out var syncDiffs, ref downloadedFiles);
+
+        var syncDiff = syncDiffs[syncPath];
 
         Assert.Multiple(() =>
         {
-            Assert.That(updatedFiles["plugins"], Is.EquivalentTo(new List<string> { @"plugins\SAIN\SAIN.dll", @"plugins\SAIN\config.txt" }));
-            Assert.That(removedFiles["plugins"], Is.EquivalentTo(new List<string> { @"plugins\SAIN\ExtraFile.txt" }));
+            Assert.That(syncDiff.Added, Is.EquivalentTo(new List<string> { @"plugins\SAIN\SAIN.dll", @"plugins\SAIN\config.txt" }));
+            Assert.That(syncDiff.Updated, Is.EquivalentTo(new List<string> { @"plugins\SAIN\config.txt" }));
+            Assert.That(syncDiff.Removed, Is.EquivalentTo(new List<string> { @"plugins\SAIN\ExtraFile.txt" }));
         });
     }
 
@@ -364,21 +313,23 @@ public class IntegrationTests
 
         List<string> downloadedFiles = [];
 
-        RunPlugin(
-            testPath,
-            syncPaths: [new SyncPath("test1.txt", enforced: true), new SyncPath("test2.txt", enforced: true)],
-            configDeleteRemovedFiles: true,
-            out _,
-            out var updatedFiles,
-            out var removedFiles,
-            out _,
-            ref downloadedFiles
-        );
+        var syncPath1 = new SyncPath("test1.txt", enforced: true);
+        var syncPath2 = new SyncPath("test2.txt", enforced: true);
+
+        RunPlugin(testPath, syncPaths: [syncPath1, syncPath2], configDeleteRemovedFiles: true, out var syncDiffs, ref downloadedFiles);
+
+        var syncDiff1 = syncDiffs[syncPath1];
+        var syncDiff2 = syncDiffs[syncPath2];
 
         Assert.Multiple(() =>
         {
-            Assert.That(updatedFiles["test1.txt"], Is.Empty);
-            Assert.That(updatedFiles["test2.txt"], Is.EquivalentTo(new List<string> { @"test2.txt" }));
+            Assert.That(syncDiff1.Added, Is.Empty);
+            Assert.That(syncDiff1.Updated, Is.Empty);
+            Assert.That(syncDiff1.Removed, Is.Empty);
+
+            Assert.That(syncDiff2.Added, Is.Empty);
+            Assert.That(syncDiff2.Updated, Is.EquivalentTo(new List<string> { @"test2.txt" }));
+            Assert.That(syncDiff2.Removed, Is.Empty);
         });
     }
 }

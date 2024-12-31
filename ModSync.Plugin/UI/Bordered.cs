@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ModSync.UI;
+namespace ModSync.Plugin.UI;
 
 public class Bordered
 {

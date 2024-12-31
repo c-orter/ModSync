@@ -18,7 +18,10 @@ pushd("-q", "../ModSync.MetroHash");
 exec(
 	"wasm-pack build --release --target nodejs --out-name metrohash --no-pack --manifest-path Cargo.toml -Z build-std=panic_abort,std -Z build-std-features=optimize_for_size,panic_immediate_abort",
 );
-cp("pkg/metrohash_bg.wasm", "../dist/user/mods/Corter-ModSync/src/utility/metrohash.wasm");
+cp(
+	"pkg/metrohash_bg.wasm",
+	"../dist/user/mods/Corter-ModSync/src/utility/metrohash.wasm",
+);
 popd("-q");
 
 pushd("-q", "../");
@@ -30,7 +33,7 @@ exec(`dotnet publish -c ${configuration} -r win-x64`);
 popd("-q");
 
 cp(
-	`../ModSync/bin/${configuration}/net472/Corter-ModSync.dll`,
+	`../ModSync.Plugin/bin/${configuration}/net472/Corter-ModSync.dll`,
 	"../dist/BepInEx/plugins/",
 );
 cp(

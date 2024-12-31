@@ -1,13 +1,16 @@
-﻿using ModSync.Utility;
+﻿using ModSync.Core;
+using ModSync.Core.Util;
 using Newtonsoft.Json;
 
-namespace ModSync.Test;
+namespace ModSync.Tests;
 
 using SyncPathModFiles = Dictionary<string, Dictionary<string, ModFile>>;
 
 [TestFixture]
 public class MigratorTests
 {
+    ILogger logger = new TestLogger();
+
     private static void CopyFilesRecursively(string source, string target) => CopyFilesRecursively(new DirectoryInfo(source), new DirectoryInfo(target));
 
     private static void CopyFilesRecursively(DirectoryInfo source, DirectoryInfo target)
@@ -31,7 +34,7 @@ public class MigratorTests
 
         List<SyncPath> syncPaths = [new(@"BepInEx\plugins"), new(@"BepInEx\patchers")];
 
-        var migrator = new Migrator(testDirectory);
+        var migrator = new Migrator(testDirectory, logger);
         migrator.TryMigrate(Version.Parse("0.8.0"), syncPaths);
 
         Assert.That(
@@ -52,7 +55,7 @@ public class MigratorTests
 
         List<SyncPath> syncPaths = [new(@"BepInEx\plugins"), new(@"BepInEx\patchers")];
 
-        var migrator = new Migrator(testDirectory);
+        var migrator = new Migrator(testDirectory, logger);
         migrator.TryMigrate(Version.Parse("0.8.0"), syncPaths);
 
         Assert.That(
@@ -73,7 +76,7 @@ public class MigratorTests
 
         List<SyncPath> syncPaths = [new(@"BepInEx\plugins"), new(@"BepInEx\patchers")];
 
-        var migrator = new Migrator(testDirectory);
+        var migrator = new Migrator(testDirectory, logger);
         migrator.TryMigrate(Version.Parse("0.9.0"), syncPaths);
 
         var modSyncDir = Path.Combine(testDirectory, "ModSync_Data");
@@ -115,7 +118,7 @@ public class MigratorTests
 
         List<SyncPath> syncPaths = [new(@"BepInEx\plugins"), new(@"BepInEx\patchers")];
 
-        var migrator = new Migrator(testDirectory);
+        var migrator = new Migrator(testDirectory, logger);
         migrator.TryMigrate(Version.Parse("0.8.0"), syncPaths);
 
         Assert.That(

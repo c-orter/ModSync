@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace ModSync.UI;
+namespace ModSync.Plugin.UI;
 
 public class ProgressWindow(string title, string message)
 {
@@ -10,11 +10,27 @@ public class ProgressWindow(string title, string message)
     private readonly CancelButton cancelButton = new();
     public bool Active { get; private set; }
 
-    public void Show() => Active = true;
-
     public void Hide() => Active = false;
 
-    public void Draw(int progressValue, int progressMax, Action cancelAction)
+    private int progressValue;
+    private int progressMax;
+    private Action cancelAction;
+
+    public void Show(int progressValue, int progressMax, Action cancelAction)
+    {
+        this.progressValue = progressValue;
+        this.progressMax = progressMax;
+        this.cancelAction = cancelAction;
+
+        Active = true;
+    }
+
+    public void Update(int progressValue)
+    {
+        this.progressValue = progressValue;
+    }
+
+    public void Draw()
     {
         float screenWidth = Screen.width;
         float screenHeight = Screen.height;
@@ -64,13 +80,12 @@ public class ProgressWindow(string title, string message)
             var borderRect = GUILayoutUtility.GetRect(size.x, size.y);
             DrawBorder(borderRect, borderThickness, Colors.Grey);
 
-            Rect progressRect =
-                new(
-                    borderRect.x + borderThickness,
-                    borderRect.y + borderThickness,
-                    borderRect.width - 2 * borderThickness,
-                    borderRect.height - 2 * borderThickness
-                );
+            Rect progressRect = new(
+                borderRect.x + borderThickness,
+                borderRect.y + borderThickness,
+                borderRect.width - 2 * borderThickness,
+                borderRect.height - 2 * borderThickness
+            );
             GUI.Box(progressRect, "");
 
             var ratio = (float)currentValue / maxValue;
@@ -93,13 +108,12 @@ internal class CancelButton : Bordered
     {
         var borderRect = GUILayoutUtility.GetRect(size.x, size.y);
 
-        Rect buttonRect =
-            new(
-                borderRect.x + borderThickness,
-                borderRect.y + borderThickness,
-                borderRect.width - 2 * borderThickness,
-                borderRect.height - 2 * borderThickness
-            );
+        Rect buttonRect = new(
+            borderRect.x + borderThickness,
+            borderRect.y + borderThickness,
+            borderRect.width - 2 * borderThickness,
+            borderRect.height - 2 * borderThickness
+        );
 
         var hovered = buttonRect.Contains(Event.current.mousePosition);
 
@@ -108,11 +122,10 @@ internal class CancelButton : Bordered
         if (active && Event.current.type == EventType.MouseUp)
             active = false;
 
-        var buttonColor = active
-            ? Colors.Grey
-            : hovered
-                ? Colors.PrimaryLight
-                : Colors.Primary;
+        var buttonColor =
+            active ? Colors.Grey
+            : hovered ? Colors.PrimaryLight
+            : Colors.Primary;
         var textColor = active ? Colors.Dark : Colors.White;
 
         DrawBorder(borderRect, borderThickness, Colors.PrimaryDark);
@@ -125,7 +138,7 @@ internal class CancelButton : Bordered
                 fontSize = 20,
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter,
-                normal = { textColor = textColor }
+                normal = { textColor = textColor },
             }
         );
     }
