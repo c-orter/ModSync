@@ -3,10 +3,11 @@ import { fs, vol } from "memfs";
 
 import { SyncUtil } from "../src/sync";
 import { Config } from "../src/config";
-import { VFS } from "./utils/vfs";
-import type { VFS as IVFS } from "@spt/utils/VFS";
+import { TestFileSystem } from "./utils/fileSystem";
+import type { FileSystem as IFileSystem } from "@spt/utils/FileSystem";
 import type { ILogger } from "@spt/models/spt/utils/ILogger";
 import { mock } from "vitest-mock-extended";
+import { TestStatter } from "./utils/statter";
 
 vi.mock("node:fs", async () => {
 	const { readFileSync } =
@@ -81,9 +82,10 @@ describe("syncTests", async () => {
 		],
 	);
 
-	const vfs = new VFS();
+	const vfs = new TestFileSystem();
+	const statter = new TestStatter();
 	const logger = mock<ILogger>();
-	const syncUtil = new SyncUtil(vfs as IVFS, config, logger);
+	const syncUtil = new SyncUtil(vfs as IFileSystem, statter, config, logger);
 
 	beforeEach(() => {
 		vol.reset();
@@ -122,8 +124,13 @@ describe("syncTests", async () => {
 				config.exclusions,
 			);
 
-			const vfs = new VFS();
-			const syncUtil = new SyncUtil(vfs as IVFS, newConfig, logger);
+			const vfs = new TestFileSystem();
+			const syncUtil = new SyncUtil(
+				vfs as IFileSystem,
+				statter,
+				newConfig,
+				logger,
+			);
 
 			const hashes = await syncUtil.hashModFiles(newConfig.syncPaths);
 
@@ -153,7 +160,12 @@ describe("syncTests", async () => {
 				config.exclusions,
 			);
 
-			const syncUtil = new SyncUtil(vfs as IVFS, newConfig, logger);
+			const syncUtil = new SyncUtil(
+				vfs as IFileSystem,
+				statter,
+				newConfig,
+				logger,
+			);
 
 			const hashes = await syncUtil.hashModFiles(newConfig.syncPaths);
 
@@ -188,7 +200,12 @@ describe("syncTests", async () => {
 				config.exclusions,
 			);
 
-			const syncUtil = new SyncUtil(vfs as IVFS, newConfig, logger);
+			const syncUtil = new SyncUtil(
+				vfs as IFileSystem,
+				statter,
+				newConfig,
+				logger,
+			);
 
 			const hashes = await syncUtil.hashModFiles(newConfig.syncPaths);
 
@@ -224,7 +241,12 @@ describe("syncTests", async () => {
 				config.exclusions,
 			);
 
-			const syncUtil = new SyncUtil(vfs as IVFS, newConfig, logger);
+			const syncUtil = new SyncUtil(
+				vfs as IFileSystem,
+				statter,
+				newConfig,
+				logger,
+			);
 
 			const hashes = await syncUtil.hashModFiles(newConfig.syncPaths);
 
@@ -259,7 +281,12 @@ describe("syncTests", async () => {
 				"plugins/OtherMod/*",
 			]);
 
-			const syncUtil = new SyncUtil(vfs as IVFS, newConfig, logger);
+			const syncUtil = new SyncUtil(
+				vfs as IFileSystem,
+				statter,
+				newConfig,
+				logger,
+			);
 
 			const hashes = await syncUtil.hashModFiles(newConfig.syncPaths);
 
@@ -325,7 +352,12 @@ describe("syncTests", async () => {
 				config.exclusions,
 			);
 
-			const syncUtil = new SyncUtil(vfs as IVFS, newConfig, logger);
+			const syncUtil = new SyncUtil(
+				vfs as IFileSystem,
+				statter,
+				newConfig,
+				logger,
+			);
 			const hashes = await syncUtil.hashModFiles(newConfig.syncPaths);
 
 			expect(hashes["plugins\\ModName\\IncludedSubdir"]).toHaveProperty(

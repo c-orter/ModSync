@@ -1,12 +1,12 @@
-﻿import { expect, beforeEach, describe, it, vi, beforeAll } from "vitest";
+﻿import { expect, beforeEach, describe, it, vi } from "vitest";
 import { fs, vol } from "memfs";
 import packageJson from "../package.json";
 
 import { Router } from "../src/router";
 import { Config } from "../src/config";
 import { SyncUtil } from "../src/sync";
-import { VFS } from "./utils/vfs";
-import type { VFS as IVFS } from "@spt/utils/VFS";
+import { TestFileSystem } from "./utils/fileSystem";
+import type { FileSystem as IFileSystem } from "@spt/utils/FileSystem";
 import type { HttpFileUtil } from "@spt/utils/HttpFileUtil";
 import { mock } from "vitest-mock-extended";
 import { PreSptModLoader } from "./utils/preSptModLoader";
@@ -15,15 +15,21 @@ import type { ILogger } from "@spt/models/spt/utils/ILogger";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { HttpError } from "../src/utility/misc";
 import type { HttpServerHelper } from "@spt/helpers/HttpServerHelper";
+import { TestStatter } from "./utils/statter";
 
 vi.mock("node:fs", async () => {
-	const { readFileSync } = await vi.importActual<typeof import("node:fs")>("node:fs");
+	const { readFileSync } =
+		await vi.importActual<typeof import("node:fs")>("node:fs");
 	const { fs } = await vi.importActual<typeof import("memfs")>("memfs");
 
 	return {
 		...fs,
-		readFileSync: vi.fn((path, options) => path.endsWith(".wasm") ? readFileSync("../ModSync.MetroHash/pkg/metrohash_bg.wasm") : fs.readFileSync(path, options)),
-	}
+		readFileSync: vi.fn((path, options) =>
+			path.endsWith(".wasm")
+				? readFileSync("../ModSync.MetroHash/pkg/metrohash_bg.wasm")
+				: fs.readFileSync(path, options),
+		),
+	};
 });
 
 describe("router", async () => {
@@ -66,9 +72,10 @@ describe("router", async () => {
 			"**/node_modules",
 		],
 	);
-	const vfs = new VFS() as IVFS;
+	const vfs = new TestFileSystem() as IFileSystem;
+	const statter = new TestStatter();
 	const logger = mock<ILogger>();
-	const syncUtil = new SyncUtil(vfs, config, logger);
+	const syncUtil = new SyncUtil(vfs, statter, config, logger);
 	const httpFileUtil = mock<HttpFileUtil>();
 	const httpServerHelper = mock<HttpServerHelper>();
 	const modImporter = new PreSptModLoader() as IPreSptModLoader;
@@ -76,6 +83,7 @@ describe("router", async () => {
 		config,
 		syncUtil,
 		vfs,
+		statter,
 		httpFileUtil,
 		httpServerHelper,
 		modImporter,
@@ -92,7 +100,9 @@ describe("router", async () => {
 			vol.reset();
 			vol.fromNestedJSON({ "package.json": '{ "version": "1.0.0" }' });
 
-			req = mock<IncomingMessage>({ headers: { "modsync-version": packageJson.version } });
+			req = mock<IncomingMessage>({
+				headers: { "modsync-version": packageJson.version },
+			});
 			res = mock<ServerResponse>();
 		});
 
@@ -115,7 +125,9 @@ describe("router", async () => {
 		let res = mock<ServerResponse>();
 
 		beforeEach(() => {
-			req = mock<IncomingMessage>({ headers: { "modsync-version": packageJson.version } });
+			req = mock<IncomingMessage>({
+				headers: { "modsync-version": packageJson.version },
+			});
 			res = mock<ServerResponse>();
 		});
 
@@ -150,7 +162,9 @@ describe("router", async () => {
 		});
 		let res = mock<ServerResponse>();
 		beforeEach(() => {
-			req = mock<IncomingMessage>({ headers: { "modsync-version": packageJson.version } });
+			req = mock<IncomingMessage>({
+				headers: { "modsync-version": packageJson.version },
+			});
 			res = mock<ServerResponse>();
 		});
 
@@ -199,7 +213,9 @@ describe("router", async () => {
 			vol.reset();
 			vol.fromNestedJSON(directoryStructure);
 
-			req = mock<IncomingMessage>({ headers: { "modsync-version": packageJson.version } });
+			req = mock<IncomingMessage>({
+				headers: { "modsync-version": packageJson.version },
+			});
 			res = mock<ServerResponse>();
 		});
 
@@ -263,7 +279,9 @@ describe("router", async () => {
 			vol.fromNestedJSON(directoryStructure);
 			httpFileUtil.sendFileAsync.mockClear();
 
-			req = mock<IncomingMessage>({ headers: { "modsync-version": packageJson.version } });
+			req = mock<IncomingMessage>({
+				headers: { "modsync-version": packageJson.version },
+			});
 			res = mock<ServerResponse>();
 		});
 

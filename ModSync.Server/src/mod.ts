@@ -5,13 +5,14 @@ import type { IPreSptLoadMod } from "@spt/models/external/IPreSptLoadMod";
 import type { ILogger } from "@spt/models/spt/utils/ILogger";
 import type { HttpListenerModService } from "@spt/services/mod/httpListener/HttpListenerModService";
 import type { HttpFileUtil } from "@spt/utils/HttpFileUtil";
-import type { VFS } from "@spt/utils/VFS";
+import type { FileSystem } from "@spt/utils/FileSystem";
 import type { JsonUtil } from "@spt/utils/JsonUtil";
 import { ConfigUtil, type Config } from "./config";
 import { SyncUtil } from "./sync";
 import { Router } from "./router";
 import type { PreSptModLoader } from "@spt/loaders/PreSptModLoader";
 import type { HttpServerHelper } from "@spt/helpers/HttpServerHelper";
+import { Statter } from "./utility/statter";
 
 class Mod implements IPreSptLoadMod {
 	private static container: DependencyContainer;
@@ -22,7 +23,7 @@ class Mod implements IPreSptLoadMod {
 	public async preSptLoad(container: DependencyContainer): Promise<void> {
 		Mod.container = container;
 		const logger = container.resolve<ILogger>("WinstonLogger");
-		const vfs = container.resolve<VFS>("VFS");
+		const vfs = container.resolve<FileSystem>("FileSystem");
 		const jsonUtil = container.resolve<JsonUtil>("JsonUtil");
 		const modImporter = container.resolve<PreSptModLoader>("PreSptModLoader");
 		const configUtil = new ConfigUtil(vfs, jsonUtil, modImporter, logger);
@@ -46,12 +47,16 @@ class Mod implements IPreSptLoadMod {
 
 		if (!vfs.exists("ModSync.Updater.exe")) {
 			Mod.loadFailed = true;
-			logger.error("Corter-ModSync: ModSync.Updater.exe not found! Please ensure ALL files from the release zip are extracted onto the server.");
+			logger.error(
+				"Corter-ModSync: ModSync.Updater.exe not found! Please ensure ALL files from the release zip are extracted onto the server.",
+			);
 		}
 
 		if (!vfs.exists("BepInEx/plugins/Corter-ModSync.dll")) {
 			Mod.loadFailed = true;
-			logger.error("Corter-ModSync: Corter-ModSync.dll not found! Please ensure ALL files from the release zip are extracted onto the server.");
+			logger.error(
+				"Corter-ModSync: Corter-ModSync.dll not found! Please ensure ALL files from the release zip are extracted onto the server.",
+			);
 		}
 	}
 
@@ -65,17 +70,19 @@ class Mod implements IPreSptLoadMod {
 		res: ServerResponse,
 	): Promise<void> {
 		const logger = Mod.container.resolve<ILogger>("WinstonLogger");
-		const vfs = Mod.container.resolve<VFS>("VFS");
+		const vfs = Mod.container.resolve<FileSystem>("FileSystem");
 		const httpFileUtil = Mod.container.resolve<HttpFileUtil>("HttpFileUtil");
 		const httpServerHelper =
 			Mod.container.resolve<HttpServerHelper>("HttpServerHelper");
 		const modImporter =
 			Mod.container.resolve<PreSptModLoader>("PreSptModLoader");
-		const syncUtil = new SyncUtil(vfs, Mod.config, logger);
+		const statter = new Statter();
+		const syncUtil = new SyncUtil(vfs, statter, Mod.config, logger);
 		const router = new Router(
 			Mod.config,
 			syncUtil,
 			vfs,
+			statter,
 			httpFileUtil,
 			httpServerHelper,
 			modImporter,

@@ -1,10 +1,10 @@
 ﻿import { expect, beforeEach, describe, it, vi } from "vitest";
 
 import { Config, ConfigUtil } from "../src/config";
-import { VFS } from "./utils/vfs";
+import { TestFileSystem } from "./utils/fileSystem";
 import { JsonUtil } from "./utils/jsonUtil";
 import { PreSptModLoader } from "./utils/preSptModLoader";
-import type { VFS as IVFS } from "@spt/utils/VFS";
+import type { FileSystem as IFileSystem } from "@spt/utils/FileSystem";
 import type { JsonUtil as IJsonUtil } from "@spt/utils/JsonUtil";
 import type { PreSptModLoader as IPreSptModLoader } from "@spt/loaders/PreSptModLoader";
 import { fs, vol } from "memfs";
@@ -74,7 +74,7 @@ describe("ConfigUtil", () => {
 		);
 
 		await new ConfigUtil(
-			new VFS() as IVFS,
+			new TestFileSystem() as IFileSystem,
 			new JsonUtil() as IJsonUtil,
 			new PreSptModLoader() as IPreSptModLoader,
 			mock<ILogger>(),
@@ -104,7 +104,7 @@ describe("ConfigUtil", () => {
 		);
 
 		const config = await new ConfigUtil(
-			new VFS() as IVFS,
+			new TestFileSystem() as IFileSystem,
 			new JsonUtil() as IJsonUtil,
 			new PreSptModLoader() as IPreSptModLoader,
 			mock<ILogger>(),
@@ -132,7 +132,7 @@ describe("ConfigUtil", () => {
 		);
 
 		const config = await new ConfigUtil(
-			new VFS() as IVFS,
+			new TestFileSystem() as IFileSystem,
 			new JsonUtil() as IJsonUtil,
 			new PreSptModLoader() as IPreSptModLoader,
 			mock<ILogger>(),
@@ -160,7 +160,7 @@ describe("ConfigUtil", () => {
 		);
 
 		const configUtil = new ConfigUtil(
-			new VFS() as IVFS,
+			new TestFileSystem() as IFileSystem,
 			new JsonUtil() as IJsonUtil,
 			new PreSptModLoader() as IPreSptModLoader,
 			mock<ILogger>(),
@@ -187,7 +187,7 @@ describe("ConfigUtil", () => {
 		);
 
 		const configUtil = new ConfigUtil(
-			new VFS() as IVFS,
+			new TestFileSystem() as IFileSystem,
 			new JsonUtil() as IJsonUtil,
 			new PreSptModLoader() as IPreSptModLoader,
 			mock<ILogger>(),
@@ -213,7 +213,7 @@ describe("ConfigUtil", () => {
 		);
 
 		const configUtil = new ConfigUtil(
-			new VFS() as IVFS,
+			new TestFileSystem() as IFileSystem,
 			new JsonUtil() as IJsonUtil,
 			new PreSptModLoader() as IPreSptModLoader,
 			mock<ILogger>(),
@@ -237,7 +237,7 @@ describe("ConfigUtil", () => {
 		);
 
 		const configUtil = new ConfigUtil(
-			new VFS() as IVFS,
+			new TestFileSystem() as IFileSystem,
 			new JsonUtil() as IJsonUtil,
 			new PreSptModLoader() as IPreSptModLoader,
 			mock<ILogger>(),
@@ -263,7 +263,7 @@ describe("ConfigUtil", () => {
 		);
 
 		const configUtil = new ConfigUtil(
-			new VFS() as IVFS,
+			new TestFileSystem() as IFileSystem,
 			new JsonUtil() as IJsonUtil,
 			new PreSptModLoader() as IPreSptModLoader,
 			mock<ILogger>(),
@@ -289,7 +289,7 @@ describe("ConfigUtil", () => {
 		);
 
 		const configUtil = new ConfigUtil(
-			new VFS() as IVFS,
+			new TestFileSystem() as IFileSystem,
 			new JsonUtil() as IJsonUtil,
 			new PreSptModLoader() as IPreSptModLoader,
 			mock<ILogger>(),
@@ -319,7 +319,7 @@ describe("ConfigUtil", () => {
 		} as unknown as ILogger;
 
 		const configUtil = new ConfigUtil(
-			new VFS() as IVFS,
+			new TestFileSystem() as IFileSystem,
 			new JsonUtil() as IJsonUtil,
 			new PreSptModLoader() as IPreSptModLoader,
 			logger,
@@ -343,7 +343,7 @@ describe("ConfigUtil", () => {
 		);
 
 		const configUtil = new ConfigUtil(
-			new VFS() as IVFS,
+			new TestFileSystem() as IFileSystem,
 			new JsonUtil() as IJsonUtil,
 			new PreSptModLoader() as IPreSptModLoader,
 			mock<ILogger>(),
@@ -363,7 +363,7 @@ describe("ConfigUtil", () => {
 		);
 
 		const configUtil = new ConfigUtil(
-			new VFS() as IVFS,
+			new TestFileSystem() as IFileSystem,
 			new JsonUtil() as IJsonUtil,
 			new PreSptModLoader() as IPreSptModLoader,
 			mock<ILogger>(),

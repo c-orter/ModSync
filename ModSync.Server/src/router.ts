@@ -3,12 +3,13 @@ import type { SyncUtil } from "./sync";
 import { glob } from "./utility/glob";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
-import type { VFS } from "@spt/utils/VFS";
+import type { FileSystem } from "@spt/utils/FileSystem";
 import type { Config } from "./config";
 import { HttpError, winPath } from "./utility/misc";
 import type { ILogger } from "@spt/models/spt/utils/ILogger";
 import type { PreSptModLoader } from "@spt/loaders/PreSptModLoader";
 import type { HttpServerHelper } from "@spt/helpers/HttpServerHelper";
+import type { IStatter } from "./utility/statter";
 
 const FALLBACK_SYNCPATHS: Record<string, object> = {};
 
@@ -20,22 +21,22 @@ FALLBACK_SYNCPATHS[undefined] = [
 FALLBACK_SYNCPATHS["0.8.0"] =
 	FALLBACK_SYNCPATHS["0.8.1"] =
 	FALLBACK_SYNCPATHS["0.8.2"] =
-	[
-		{
-			enabled: true,
-			enforced: true,
-			path: "BepInEx\\plugins\\Corter-ModSync.dll",
-			restartRequired: true,
-			silent: false,
-		},
-		{
-			enabled: true,
-			enforced: true,
-			path: "ModSync.Updater.exe",
-			restartRequired: false,
-			silent: false,
-		},
-	];
+		[
+			{
+				enabled: true,
+				enforced: true,
+				path: "BepInEx\\plugins\\Corter-ModSync.dll",
+				restartRequired: true,
+				silent: false,
+			},
+			{
+				enabled: true,
+				enforced: true,
+				path: "ModSync.Updater.exe",
+				restartRequired: false,
+				silent: false,
+			},
+		];
 
 const FALLBACK_HASHES: Record<string, object> = {};
 
@@ -47,28 +48,29 @@ FALLBACK_HASHES[undefined] = {
 FALLBACK_HASHES["0.8.0"] =
 	FALLBACK_HASHES["0.8.1"] =
 	FALLBACK_HASHES["0.8.2"] =
-	{
-		"BepInEx\\plugins\\Corter-ModSync.dll": {
+		{
 			"BepInEx\\plugins\\Corter-ModSync.dll": {
-				crc: 999999999,
-				nosync: false,
+				"BepInEx\\plugins\\Corter-ModSync.dll": {
+					crc: 999999999,
+					nosync: false,
+				},
 			},
-		},
-		"ModSync.Updater.exe": {
-			"ModSync.Updater.exe": { crc: 999999999, nosync: false },
-		},
-	};
+			"ModSync.Updater.exe": {
+				"ModSync.Updater.exe": { crc: 999999999, nosync: false },
+			},
+		};
 
 export class Router {
 	constructor(
 		private config: Config,
 		private syncUtil: SyncUtil,
-		private vfs: VFS,
+		private vfs: FileSystem,
+		private statter: IStatter,
 		private httpFileUtil: HttpFileUtil,
 		private httpServerHelper: HttpServerHelper,
 		private modImporter: PreSptModLoader,
 		private logger: ILogger,
-	) { }
+	) {}
 
 	/**
 	 * @internal
@@ -80,13 +82,8 @@ export class Router {
 		_params: URLSearchParams,
 	) {
 		const modPath = this.modImporter.getModPath("Corter-ModSync");
-		const packageJson = JSON.parse(
-			// @ts-expect-error readFile returns a string when given a valid encoding
-			await this.vfs
-				// @ts-expect-error readFile takes in an options object, including an encoding option
-				.readFilePromisify(path.join(modPath, "package.json"), {
-					encoding: "utf-8",
-				}),
+		const packageJson = await this.vfs.readJson(
+			path.join(modPath, "package.json"),
 		);
 
 		res.setHeader("Content-Type", "application/json");
@@ -185,19 +182,19 @@ export class Router {
 			this.config.syncPaths,
 		);
 
-		if (!this.vfs.exists(sanitizedPath))
+		if (!(await this.vfs.exists(sanitizedPath)))
 			throw new HttpError(
 				404,
 				`Attempt to access non-existent path ${filePath}`,
 			);
 
 		try {
-			const fileStats = await this.vfs.statPromisify(sanitizedPath);
+			const fileStats = await this.statter.stat(sanitizedPath);
 			res.setHeader("Accept-Ranges", "bytes");
 			res.setHeader(
 				"Content-Type",
 				this.httpServerHelper.getMimeText(path.extname(filePath)) ||
-				"text/plain",
+					"text/plain",
 			);
 			res.setHeader("Content-Length", fileStats.size);
 			return this.httpFileUtil.sendFileAsync(res, sanitizedPath);
