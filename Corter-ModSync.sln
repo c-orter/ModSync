@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # 
 VisualStudioVersion = 17.5.002.0
-MinimumVisualStudioVersion = 
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModSync", "ModSync\ModSync.csproj", "{F4413AE8-F4FB-4D5C-8CCD-154AA2B13336}"
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "ModSync.Utility", "ModSync.Utility\ModSync.Utility.shproj", "{C5E66358-785A-4036-97D5-FF728AD9E98B}"
