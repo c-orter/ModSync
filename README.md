@@ -40,7 +40,7 @@ This project allows clients to easily add/update/remove mods, keeping them in sy
 
 > The ModSync Updater (client-only) requires the 
 > [.NET 8.0 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-8.0.11-windows-x64-installer).
-> If you use the launcher, you'll have it, but dedicated clients may need to manually install it.
+> If you use the launcher, you'll have it, but headless clients may need to manually install it.
 
 1. Download the latest version of the mod from the [GitHub Releases](https://github.com/c-orter/modsync/releases) page
 2. Extract into your SPT folder like any other mod

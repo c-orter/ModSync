@@ -33,7 +33,7 @@ public class Plugin : BaseUnityPlugin
     private static readonly string LOCAL_EXCLUSIONS_PATH = Path.Combine(MODSYNC_DIR, "Exclusions.json");
     private static readonly string UPDATER_PATH = Path.Combine(Directory.GetCurrentDirectory(), "ModSync.Updater.exe");
 
-    private static readonly List<string> DEDICATED_DEFAULT_EXCLUSIONS =
+    private static readonly List<string> HEADLESS_DEFAULT_EXCLUSIONS =
     [
         "BepInEx/plugins/AmandsGraphics.dll",
         "BepInEx/plugins/AmandsSense.dll",
@@ -80,11 +80,11 @@ public class Plugin : BaseUnityPlugin
                 + createdDirectories[syncPath.path].Count
             )
             .Sum();
-    private static bool IsDedicated => Chainloader.PluginInfos.ContainsKey("com.fika.dedicated");
+    private static bool IsHeadless => Chainloader.PluginInfos.ContainsKey("com.fika.headless");
     private List<SyncPath> EnabledSyncPaths => syncPaths.Where(syncPath => configSyncPathToggles[syncPath.path].Value || syncPath.enforced).ToList();
 
     private bool SilentMode =>
-        IsDedicated
+        IsHeadless
         || EnabledSyncPaths.All(syncPath =>
             syncPath.silent
             || (
@@ -215,7 +215,7 @@ public class Plugin : BaseUnityPlugin
 
         totalDownloadCount = downloadTasks.Count;
 
-        if (!IsDedicated)
+        if (!IsHeadless)
             progressWindow.Show();
 
         while (downloadTasks.Count > 0 && !cts.IsCancellationRequested)
@@ -233,7 +233,7 @@ public class Plugin : BaseUnityPlugin
 
                 cts.Cancel();
                 progressWindow.Hide();
-                if (!IsDedicated)
+                if (!IsHeadless)
                     downloadErrorWindow.Show();
             }
 
@@ -255,7 +255,7 @@ public class Plugin : BaseUnityPlugin
                 Directory.Delete(PENDING_UPDATES_DIR, true);
                 pluginFinished = true;
             }
-            else if (!IsDedicated)
+            else if (!IsHeadless)
                 restartWindow.Show();
             else
                 StartUpdaterProcess();
@@ -284,7 +284,7 @@ public class Plugin : BaseUnityPlugin
     {
         List<string> options = [];
 
-        if (IsDedicated)
+        if (IsHeadless)
             options.Add("--silent");
 
         Logger.LogInfo($"Starting Updater with arguments {string.Join(" ", options)} {Process.GetCurrentProcess().Id}");
@@ -412,17 +412,17 @@ public class Plugin : BaseUnityPlugin
         }
 
         Logger.LogDebug("Loading local exclusions");
-        if (IsDedicated && !VFS.Exists(LOCAL_EXCLUSIONS_PATH))
+        if (IsHeadless && !VFS.Exists(LOCAL_EXCLUSIONS_PATH))
         {
             try
             {
-                VFS.WriteTextFile(LOCAL_EXCLUSIONS_PATH, Json.Serialize(DEDICATED_DEFAULT_EXCLUSIONS));
+                VFS.WriteTextFile(LOCAL_EXCLUSIONS_PATH, Json.Serialize(HEADLESS_DEFAULT_EXCLUSIONS));
             }
             catch (Exception e)
             {
                 Logger.LogError(e);
                 Chainloader.DependencyErrors.Add(
-                    $"Could not load {Info.Metadata.Name} due to error writing local exclusions file for dedicated client. Please check BepInEx/LogOutput.log for more information."
+                    $"Could not load {Info.Metadata.Name} due to error writing local exclusions file for headless client. Please check BepInEx/LogOutput.log for more information."
                 );
                 yield break;
             }
