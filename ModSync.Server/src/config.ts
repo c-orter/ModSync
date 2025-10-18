@@ -1,7 +1,7 @@
 ﻿import path from "node:path";
 import type { PreSptModLoader } from "@spt/loaders/PreSptModLoader";
 import type { JsonUtil } from "@spt/utils/JsonUtil";
-import type { VFS } from "@spt/utils/VFS";
+import type { FileSystem } from "@spt/utils/FileSystem";
 import { glob } from "./utility/glob";
 import { unixPath } from "./utility/misc";
 import type { ILogger } from "@spt/models/spt/utils/ILogger";
@@ -43,7 +43,7 @@ const DEFAULT_CONFIG = `{
 		// Fika
 		"user/mods/fika-server/types",
 		"user/mods/fika-server/cache",
-		"BepInEx/plugins/Fika.Dedicated.dll",
+		"BepInEx/plugins/Fika.Headless.dll",
 		// Live Flea Prices
 		"user/mods/zzDrakiaXYZ-LiveFleaPrices/config",
 		// Questing Bots
@@ -87,7 +87,7 @@ export class Config {
 }
 export class ConfigUtil {
 	constructor(
-		private vfs: VFS,
+		private vfs: FileSystem,
 		private jsonUtil: JsonUtil,
 		private modImporter: PreSptModLoader,
 		private logger: ILogger,
@@ -100,12 +100,12 @@ export class ConfigUtil {
 		const modPath = this.modImporter.getModPath("Corter-ModSync");
 		const configPath = path.join(modPath, "config.jsonc");
 
-		if (!this.vfs.exists(configPath))
-			await this.vfs.writeFilePromisify(configPath, DEFAULT_CONFIG);
+		if (!(await this.vfs.exists(configPath))) {
+			await this.vfs.write(configPath, DEFAULT_CONFIG);
+		}
 
 		return this.jsonUtil.deserializeJsonC(
-			// @ts-expect-error I am right, SPT is wrong
-			await this.vfs.readFilePromisify(configPath, { encoding: "utf-8" }),
+			await this.vfs.read(configPath),
 			"config.jsonc",
 		) as RawConfig;
 	}

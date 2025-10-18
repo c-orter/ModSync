@@ -12,7 +12,7 @@ namespace ModSync.Core;
 
 using SyncPathModFiles = Dictionary<string, Dictionary<string, ModFile>>;
 
-public class Syncer(ISyncFrontend frontend, Version version, string hostname, ILogger logger)
+public class Syncer(ISyncFrontend frontend, Version version, string hostname, ILogger logger, List<string> defaultExclusions = null)
 {
     private readonly Server server = new(version, hostname, logger);
     private readonly Comparator comparator = new(logger);
@@ -110,7 +110,9 @@ public class Syncer(ISyncFrontend frontend, Version version, string hostname, IL
 
         try
         {
-            localExclusions = File.Exists(LOCAL_EXCLUSIONS_PATH) ? JsonConvert.DeserializeObject<List<string>>(File.ReadAllText(LOCAL_EXCLUSIONS_PATH)) : [];
+            localExclusions = File.Exists(LOCAL_EXCLUSIONS_PATH)
+                ? JsonConvert.DeserializeObject<List<string>>(File.ReadAllText(LOCAL_EXCLUSIONS_PATH))
+                : defaultExclusions ?? [];
         }
         catch (Exception e)
         {

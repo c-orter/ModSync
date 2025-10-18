@@ -69,17 +69,17 @@ const wasmInstance = new WebAssembly.Instance(wasmModule, {
 			takeObject(arg0);
 		},
 
-		__wbg_buffer_ccaed51a635d8a2d: (arg0: number) => {
+		__wbg_buffer_609cc3eee51ed158: (arg0: number) => {
 			const ret = getObject(arg0).buffer;
 			return addHeapObject(ret);
 		},
 
-		__wbg_newwithbyteoffsetandlength_7e3eb787208af730: (arg0: number, arg1: number, arg2: number) => {
+		__wbg_newwithbyteoffsetandlength_d97e637ebe145a9a: (arg0: number, arg1: number, arg2: number) => {
 			const ret = new Uint8Array(getObject(arg0), arg1 >>> 0, arg2 >>> 0);
 			return addHeapObject(ret);
 		},
 
-		__wbg_new_fec2611eb9180f95: (arg0: number) => {
+		__wbg_new_a12002a7f91c75be: (arg0: number) => {
 			const ret = new Uint8Array(getObject(arg0));
 			return addHeapObject(ret);
 		},

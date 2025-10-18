@@ -1,10 +1,11 @@
 ﻿import path from "node:path";
 import type { ILogger } from "@spt/models/spt/utils/ILogger";
-import type { VFS } from "@spt/utils/VFS";
+import type { FileSystem } from "@spt/utils/FileSystem";
 import type { Config, SyncPath } from "./config";
 import { hashFile } from "./utility/imoHash";
 import { HttpError, winPath } from "./utility/misc";
 import { Semaphore } from "./utility/semaphore";
+import type { IStatter } from "./utility/statter";
 
 type ModFile = {
 	hash: string;
@@ -15,24 +16,25 @@ export class SyncUtil {
 	private limiter = new Semaphore(1024);
 
 	constructor(
-		private vfs: VFS,
+		private vfs: FileSystem,
+		private statter: IStatter,
 		private config: Config,
 		private logger: ILogger,
 	) {}
 
 	private async getFilesInDir(baseDir: string, dir: string): Promise<string[]> {
-		if (!this.vfs.exists(dir)) {
+		if (!(await this.vfs.exists(dir))) {
 			this.logger.warning(
 				`Corter-ModSync: Directory '${dir}' does not exist, will be ignored.`,
 			);
 			return [];
 		}
 
-		const stats = await this.vfs.statPromisify(dir);
+		const stats = await this.statter.stat(dir);
 		if (stats.isFile()) return [dir];
 
 		const files: string[] = [];
-		for (const fileName of this.vfs.getFiles(dir)) {
+		for (const fileName of await this.vfs.getFiles(dir)) {
 			const file = path.join(dir, fileName);
 
 			if (this.config.isExcluded(file)) continue;
@@ -40,15 +42,15 @@ export class SyncUtil {
 			files.push(file);
 		}
 
-		for (const dirName of this.vfs.getDirs(dir)) {
+		for (const dirName of await this.vfs.getDirectories(dir)) {
 			const subDir = path.join(dir, dirName);
 
 			if (this.config.isExcluded(subDir)) continue;
 
 			const subFiles = await this.getFilesInDir(baseDir, subDir);
 			if (
-				this.vfs.getFiles(subDir).length === 0 &&
-				this.vfs.getDirs(subDir).length === 0
+				(await this.vfs.getFiles(subDir)).length === 0 &&
+				(await this.vfs.getDirectories(subDir)).length === 0
 			)
 				files.push(subDir);
 
@@ -57,8 +59,8 @@ export class SyncUtil {
 
 		if (
 			stats.isDirectory() &&
-			this.vfs.getFiles(dir).length === 0 &&
-			this.vfs.getDirs(dir).length === 0
+			(await this.vfs.getFiles(dir)).length === 0 &&
+			(await this.vfs.getDirectories(dir)).length === 0
 		)
 			files.push(dir);
 
@@ -70,7 +72,7 @@ export class SyncUtil {
 		// biome-ignore lint/correctness/noEmptyPattern: <explanation>
 		{}: Required<SyncPath>,
 	): Promise<ModFile> {
-		const stats = await this.vfs.statPromisify(file);
+		const stats = await this.statter.stat(file);
 		if (stats.isDirectory()) return { hash: "", directory: true };
 
 		let retryCount = 0;

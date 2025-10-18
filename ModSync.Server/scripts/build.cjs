@@ -33,11 +33,11 @@ exec(`dotnet publish -c ${configuration} -r win-x64`);
 popd("-q");
 
 cp(
-	`../ModSync.Plugin/bin/${configuration}/net472/Corter-ModSync.dll`,
+	`../ModSync.Plugin/bin/${configuration}/netstandard2.1/Corter-ModSync.dll`,
 	"../dist/BepInEx/plugins/",
 );
 cp(
-	`../ModSync.Updater/bin/${configuration}/net8.0-windows/win-x64/publish/ModSync.Updater.exe`,
+	`../ModSync.Updater/bin/${configuration}/net9.0-windows/win-x64/publish/ModSync.Updater.exe`,
 	"../dist/",
 );
 

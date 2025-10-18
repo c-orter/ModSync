@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
     <OutputType>Library</OutputType>
     <AssemblyName>ModSync.Plugin</AssemblyName>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
@@ -12,7 +12,7 @@
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <!-- the ILMergePath property points to the location of ILMerge.exe console application -->
     <Exec
-      Command="$(ILMergeConsolePath) /out:Corter-ModSync.dll ModSync.Core.dll ModSync.Plugin.dll"
+      Command="ILRepack.exe /out:Corter-ModSync.dll ModSync.Core.dll ModSync.Plugin.dll"
       WorkingDirectory="$(TargetDir)" />
   </Target>
 
@@ -60,7 +60,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\EscapeFromTarkov_Data\Managed\Sirenix.Serialization.dll</HintPath>
     </Reference>
-    <Reference Include="System.Net.Http" />
     <Reference
       Include="Unity.TextMeshPro, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -100,7 +99,7 @@
     <Compile Include="ModSync.GUI\*.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="ilmerge" Version="3.0.41" />
+    <PackageReference Include="ILRepack" Version="2.0.44" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
   </ItemGroup>

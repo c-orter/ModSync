@@ -3,14 +3,13 @@ import type { SyncUtil } from "./sync";
 import { glob } from "./utility/glob";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
-import type { VFS } from "@spt/utils/VFS";
+import type { FileSystem } from "@spt/utils/FileSystem";
 import type { Config } from "./config";
 import { HttpError, winPath } from "./utility/misc";
 import type { ILogger } from "@spt/models/spt/utils/ILogger";
 import type { PreSptModLoader } from "@spt/loaders/PreSptModLoader";
 import type { HttpServerHelper } from "@spt/helpers/HttpServerHelper";
-import { LogTextColor } from "@spt/models/spt/logging/LogTextColor";
-import { LogBackgroundColor } from "@spt/models/spt/logging/LogBackgroundColor";
+import type { IStatter } from "./utility/statter";
 
 const FALLBACK_SYNCPATHS: Record<string, object> = {};
 
@@ -65,7 +64,8 @@ export class Router {
 	constructor(
 		private config: Config,
 		private syncUtil: SyncUtil,
-		private vfs: VFS,
+		private vfs: FileSystem,
+		private statter: IStatter,
 		private httpFileUtil: HttpFileUtil,
 		private httpServerHelper: HttpServerHelper,
 		private modImporter: PreSptModLoader,
@@ -82,13 +82,8 @@ export class Router {
 		_params: URLSearchParams,
 	) {
 		const modPath = this.modImporter.getModPath("Corter-ModSync");
-		const packageJson = JSON.parse(
-			// @ts-expect-error readFile returns a string when given a valid encoding
-			await this.vfs
-				// @ts-expect-error readFile takes in an options object, including an encoding option
-				.readFilePromisify(path.join(modPath, "package.json"), {
-					encoding: "utf-8",
-				}),
+		const packageJson = await this.vfs.readJson(
+			path.join(modPath, "package.json"),
 		);
 
 		res.setHeader("Content-Type", "application/json");
@@ -187,18 +182,14 @@ export class Router {
 			this.config.syncPaths,
 		);
 
-		if (+path.basename(filePath) % 10 === 0) {
-			throw new HttpError(500, `Corter-ModSync: Get Pranked '${filePath}'!`);
-		}
-
-		if (!this.vfs.exists(sanitizedPath))
+		if (!(await this.vfs.exists(sanitizedPath)))
 			throw new HttpError(
 				404,
 				`Corter-ModSync: Attempt to access non-existent path ${filePath}`,
 			);
 
 		try {
-			const fileStats = await this.vfs.statPromisify(sanitizedPath);
+			const fileStats = await this.statter.stat(sanitizedPath);
 			res.setHeader("Accept-Ranges", "bytes");
 			res.setHeader(
 				"Content-Type",

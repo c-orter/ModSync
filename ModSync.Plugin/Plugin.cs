@@ -23,20 +23,22 @@ public class Plugin : BaseUnityPlugin, ISyncFrontend
 {
     private static readonly string SPTDir = Environment.CurrentDirectory;
     private static readonly string UPDATER_PATH = Path.Combine(Directory.GetCurrentDirectory(), "ModSync.Updater.exe");
-    private static bool IsDedicated => Chainloader.PluginInfos.ContainsKey("com.fika.dedicated");
+    private static bool IsHeadless => Chainloader.PluginInfos.ContainsKey("com.fika.headless");
 
-    private static readonly List<string> DEDICATED_DEFAULT_EXCLUSIONS =
-    [
-        "BepInEx/plugins/AmandsGraphics.dll",
-        "BepInEx/plugins/AmandsSense.dll",
-        "BepInEx/plugins/Sense",
-        "BepInEx/plugins/MoreCheckmarks",
-        "BepInEx/plugins/kmyuhkyuk-EFTApi",
-        "BepInEx/plugins/DynamicMaps",
-        "BepInEx/plugins/LootValue",
-        "BepInEx/plugins/CactusPie.RamCleanerInterval.dll",
-        "BepInEx/plugins/TYR_DeClutterer.dll",
-    ];
+    private static readonly List<string> DEFAULT_EXCLUSIONS = IsHeadless
+        ?
+        [
+            "BepInEx/plugins/AmandsGraphics.dll",
+            "BepInEx/plugins/AmandsSense.dll",
+            "BepInEx/plugins/Sense",
+            "BepInEx/plugins/MoreCheckmarks",
+            "BepInEx/plugins/kmyuhkyuk-EFTApi",
+            "BepInEx/plugins/DynamicMaps",
+            "BepInEx/plugins/LootValue",
+            "BepInEx/plugins/CactusPie.RamCleanerInterval.dll",
+            "BepInEx/plugins/TYR_DeClutterer.dll",
+        ]
+        : null;
 
     // Configuration
     internal static ConfigEntry<bool> RunSync { get; set; }
@@ -97,7 +99,7 @@ public class Plugin : BaseUnityPlugin, ISyncFrontend
 
     private void Awake()
     {
-        syncer = new Syncer(this, Info.Metadata.Version, RequestHandler.Host, Logger);
+        syncer = new Syncer(this, Info.Metadata.Version, RequestHandler.Host, Logger, DEFAULT_EXCLUSIONS);
         configDeleteRemovedFiles = Config.Bind("General", "Delete Removed Files", true, "Should the mod delete files that have been removed from the server?");
         RunSync = Config.Bind(
             "Actions",
@@ -241,7 +243,7 @@ public class Plugin : BaseUnityPlugin, ISyncFrontend
     {
         List<string> options = [];
 
-        if (IsDedicated)
+        if (IsHeadless)
             options.Add("--silent");
 
         Logger.LogInfo($"Starting Updater with arguments {string.Join(" ", options)} {Process.GetCurrentProcess().Id}");

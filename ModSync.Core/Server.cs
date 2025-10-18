@@ -73,8 +73,7 @@ public class Server(Version pluginVersion, string hostname, ILogger logger)
                 using var responseStream = await response.Content.ReadAsStreamAsync();
                 using var fileStream = new FileStream(downloadPath, FileMode.Create);
 
-                if ((int)responseStream.Length > 0)
-                    await responseStream.CopyToAsync(fileStream, (int)responseStream.Length, cancellationToken);
+                await responseStream.CopyToAsync(fileStream);
 
                 limiter.Release();
                 return;
