@@ -1,6 +1,7 @@
 ﻿using ModSync.Core;
 using ModSync.Core.Util;
 using Newtonsoft.Json;
+using Snapper.Nunit;
 
 namespace ModSync.Tests;
 
@@ -9,7 +10,7 @@ using SyncPathModFiles = Dictionary<string, Dictionary<string, ModFile>>;
 [TestFixture]
 public class MigratorTests
 {
-    ILogger logger = new TestLogger();
+    ILogger logger = new TestUtils.TestLogger();
 
     private static void CopyFilesRecursively(string source, string target) => CopyFilesRecursively(new DirectoryInfo(source), new DirectoryInfo(target));
 
@@ -90,20 +91,7 @@ public class MigratorTests
 
         var previousSync = JsonConvert.DeserializeObject<SyncPathModFiles>(File.ReadAllText(Path.Combine(modSyncDir, "PreviousSync.json")));
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(previousSync!.Keys, Is.EquivalentTo(syncPaths.Select(syncPath => syncPath.path)));
-            Assert.That(
-                previousSync[@"BepInEx\plugins"].Keys,
-                Is.EquivalentTo(new List<string> { @"BepInEx\plugins\SAIN.dll", @"BepInEx\plugins\Corter-ModSync.dll" })
-            );
-
-            Assert.That(previousSync[@"BepInEx\plugins"][@"BepInEx\plugins\SAIN.dll"].hash, Is.EqualTo(""));
-            Assert.That(previousSync[@"BepInEx\plugins"][@"BepInEx\plugins\Corter-ModSync.dll"].hash, Is.EqualTo(""));
-
-            Assert.That(File.Exists(Path.Combine(modSyncDir, "Version.txt")), Is.True);
-            Assert.That(File.ReadAllText(Path.Combine(modSyncDir, "Version.txt")), Is.EqualTo("0.9.0"));
-        });
+        Assert.That(previousSync, Matches.Snapshot());
 
         Directory.Delete(testDirectory, true);
     }
@@ -131,10 +119,6 @@ public class MigratorTests
 
         var previousSync = JsonConvert.DeserializeObject<SyncPathModFiles>(File.ReadAllText(Path.Combine(modSyncDir, "PreviousSync.json")))!;
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(previousSync[@"BepInEx\plugins"].Keys, Contains.Item(@"BepInEx\plugins\SAIN.dll"));
-            Assert.That(previousSync[@"BepInEx\plugins"][@"BepInEx\plugins\SAIN.dll"].directory, Is.False);
-        });
+        Assert.That(previousSync, Matches.Snapshot());
     }
 }

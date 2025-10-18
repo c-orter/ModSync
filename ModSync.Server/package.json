@@ -1,6 +1,6 @@
 {
 	"name": "Corter-ModSync",
-	"version": "0.10.2",
+	"version": "1.0.0",
 	"main": "src/mod.js",
 	"sptVersion": "~3.10",
 	"loadBefore": [],

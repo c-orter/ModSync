@@ -164,13 +164,22 @@ public class Comparator(ILogger logger)
             .Select(syncPath =>
                 (
                     syncPath,
-                    syncDiff: new SyncDiff(
-                        GetAddedFiles(syncPath, localModFiles[syncPath.path], remoteModFiles[syncPath.path]),
-                        GetUpdatedFiles(syncPath, localModFiles[syncPath.path], remoteModFiles[syncPath.path], previousSync[syncPath.path]),
-                        GetRemovedFiles(syncPath, localModFiles[syncPath.path], remoteModFiles[syncPath.path], previousSync[syncPath.path]),
-                        GetCreatedDirectories(basePath, syncPath, localModFiles[syncPath.path], remoteModFiles[syncPath.path])
-                    )
+                    localPathFiles: localModFiles.TryGetValue(syncPath.path, out var localPathFiles) ? localPathFiles : [],
+                    remotePathFiles: remoteModFiles.TryGetValue(syncPath.path, out var remotePathFiles) ? remotePathFiles : [],
+                    previousPathSync: previousSync.TryGetValue(syncPath.path, out var previousPathSync) ? previousPathSync : []
                 )
+            )
+            .Select(
+                (value) =>
+                    (
+                        value.syncPath,
+                        syncDiff: new SyncDiff(
+                            GetAddedFiles(value.syncPath, value.localPathFiles, value.remotePathFiles),
+                            GetUpdatedFiles(value.syncPath, value.localPathFiles, value.remotePathFiles, value.previousPathSync),
+                            GetRemovedFiles(value.syncPath, value.localPathFiles, value.remotePathFiles, value.previousPathSync),
+                            GetCreatedDirectories(basePath, value.syncPath, value.localPathFiles, value.remotePathFiles)
+                        )
+                    )
             )
             .ToDictionary(kvp => kvp.syncPath, kvp => kvp.syncDiff);
     }

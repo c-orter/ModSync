@@ -49,6 +49,7 @@ public class Server(Version pluginVersion, string hostname, ILogger logger)
                 using var client = new HttpClient();
                 if (retryCount > 0)
                     client.Timeout = TimeSpan.FromMinutes(10);
+
                 using var response = await client.GetAsync($"{hostname}/modsync/fetch/{file}", cancellationToken);
 
                 if (!response.IsSuccessStatusCode)

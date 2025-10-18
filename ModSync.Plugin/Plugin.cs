@@ -18,7 +18,7 @@ using UnityEngine;
 
 namespace ModSync.Plugin;
 
-[BepInPlugin("corter.modsync", "Corter ModSync", "0.10.2")]
+[BepInPlugin("corter.modsync", "Corter ModSync", "1.0.0")]
 public class Plugin : BaseUnityPlugin, ISyncFrontend
 {
     private static readonly string SPTDir = Environment.CurrentDirectory;
@@ -39,13 +39,15 @@ public class Plugin : BaseUnityPlugin, ISyncFrontend
     ];
 
     // Configuration
+    internal static ConfigEntry<bool> RunSync { get; set; }
+
     private Dictionary<string, ConfigEntry<bool>> configSyncPathToggles;
     private ConfigEntry<bool> configDeleteRemovedFiles;
 
     public static new readonly SyncLogger Logger = new(BepInEx.Logging.Logger.CreateLogSource("ModSync"));
 
     private bool pluginFinished = false;
-    private Core.ModSync modSync;
+    private Core.Syncer syncer;
 
     private readonly TextAlertWindow updateWindow = new("Installed mods do not match server", "Would you like to update?", new Vector2(800f, 640f));
     private readonly ProgressWindow progressWindow = new("Downloading Updates...", "Your game will need to be restarted\nafter update completes.");
@@ -95,10 +97,22 @@ public class Plugin : BaseUnityPlugin, ISyncFrontend
 
     private void Awake()
     {
-        modSync = new Core.ModSync(this, Info.Metadata.Version, RequestHandler.Host, Logger);
+        syncer = new Syncer(this, Info.Metadata.Version, RequestHandler.Host, Logger);
         configDeleteRemovedFiles = Config.Bind("General", "Delete Removed Files", true, "Should the mod delete files that have been removed from the server?");
+        RunSync = Config.Bind(
+            "Actions",
+            "Sync with Server",
+            false,
+            new ConfigDescription("Sync with the server now", null, new ConfigurationManagerAttributes { CustomDrawer = DrawSyncButton })
+        );
 
-        StartCoroutine(SyncCoroutine(modSync.GetTasks()));
+        StartCoroutine(SyncCoroutine(syncer.GetTasks()));
+    }
+
+    private void DrawSyncButton(ConfigEntryBase entry)
+    {
+        if (GUILayout.Button("Sync with Server", GUILayout.ExpandWidth(true)))
+            Logger.LogInfo("Doing the thing!");
     }
 
     private void OnGUI()

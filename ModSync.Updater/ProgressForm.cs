@@ -18,7 +18,7 @@ public partial class ProgressForm : Form
 
     private async void ProgressForm_Load(object sender, EventArgs _)
     {
-        VersionLabel.Text = $"v{Application.ProductVersion}";
+        VersionLabel.Text = $"v{Application.ProductVersion.Split("+")[0]}";
         StatusText.Text = @"Waiting while Tarkov closes...";
         while (true)
         {

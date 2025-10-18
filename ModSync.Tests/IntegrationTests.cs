@@ -11,10 +11,11 @@ using SyncPathModFiles = Dictionary<string, Dictionary<string, ModFile>>;
 [TestFixture]
 public class IntegrationTests
 {
-    private readonly ILogger logger = new TestLogger();
-    private readonly Comparator comparator;
+    private readonly ILogger logger = new TestUtils.TestLogger();
+    private Comparator comparator;
 
-    IntegrationTests()
+    [OneTimeSetUp]
+    public void Init()
     {
         comparator = new Comparator(logger);
     }
@@ -300,8 +301,8 @@ public class IntegrationTests
 
         Assert.Multiple(() =>
         {
-            Assert.That(syncDiff.Added, Is.EquivalentTo(new List<string> { @"plugins\SAIN\SAIN.dll", @"plugins\SAIN\config.txt" }));
-            Assert.That(syncDiff.Updated, Is.EquivalentTo(new List<string> { @"plugins\SAIN\config.txt" }));
+            Assert.That(syncDiff.Added, Is.Empty);
+            Assert.That(syncDiff.Updated, Is.EquivalentTo(new List<string> { @"plugins\SAIN\config.txt", @"plugins\SAIN\SAIN.dll" }));
             Assert.That(syncDiff.Removed, Is.EquivalentTo(new List<string> { @"plugins\SAIN\ExtraFile.txt" }));
         });
     }

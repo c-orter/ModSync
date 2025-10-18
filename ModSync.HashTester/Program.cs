@@ -1,5 +1,5 @@
 ﻿// See https://aka.ms/new-console-template for more information
-using ModSync.Core;
+using ModSync.Core.Util;
 
 if (args.Length == 0)
 {

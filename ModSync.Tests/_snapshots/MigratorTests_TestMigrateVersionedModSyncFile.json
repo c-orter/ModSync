@@ -1,0 +1,13 @@
+{
+  "BepInEx\\plugins": {
+    "BepInEx\\plugins\\SAIN.dll": {
+      "hash": "",
+      "directory": false
+    },
+    "BepInEx\\plugins\\Corter-ModSync.dll": {
+      "hash": "",
+      "directory": false
+    }
+  },
+  "BepInEx\\patchers": {}
+}

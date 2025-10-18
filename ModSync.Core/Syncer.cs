@@ -12,7 +12,7 @@ namespace ModSync.Core;
 
 using SyncPathModFiles = Dictionary<string, Dictionary<string, ModFile>>;
 
-public class ModSync(ISyncFrontend frontend, Version version, string hostname, ILogger logger)
+public class Syncer(ISyncFrontend frontend, Version version, string hostname, ILogger logger)
 {
     private readonly Server server = new(version, hostname, logger);
     private readonly Comparator comparator = new(logger);
@@ -23,14 +23,12 @@ public class ModSync(ISyncFrontend frontend, Version version, string hostname, I
     private string REMOVED_FILES_PATH => Path.Combine(MODSYNC_DIR, "RemovedFiles.json");
     private string LOCAL_EXCLUSIONS_PATH => Path.Combine(MODSYNC_DIR, "Exclusions.json");
 
-    private bool CheckPreviousUpdate()
+    private void CheckPreviousUpdate()
     {
         if (Directory.Exists(PENDING_UPDATES_DIR) || File.Exists(REMOVED_FILES_PATH))
             logger.LogWarning(
                 "ModSync found previous update. Updater may have failed, check the 'ModSync_Data/Updater.log' for details. Attempting to continue."
             );
-
-        return true;
     }
 
     private Version serverVersion;
@@ -177,10 +175,10 @@ public class ModSync(ISyncFrontend frontend, Version version, string hostname, I
         }
 
         localModFiles = await comparator.HashLocalFiles(
-            Directory.GetCurrentDirectory(),
+            frontend.GetSPTDirectory(),
             enabledSyncPaths,
-            remoteExclusions.Select(Glob.Create).ToList(),
-            localExclusions.Select(Glob.Create).ToList()
+            [.. remoteExclusions.Select(Glob.Create)],
+            [.. localExclusions.Select(Glob.Create)]
         );
 
         File.WriteAllText(LOCAL_HASHES_PATH, JsonConvert.SerializeObject(localModFiles, Formatting.Indented));
@@ -196,7 +194,7 @@ public class ModSync(ISyncFrontend frontend, Version version, string hostname, I
             logger.LogInfo($"- {syncDiffs.Sum(s => s.Value.Removed.Count)} removed");
             logger.LogInfo($"- {syncDiffs.Sum(s => s.Value.Created.Count)} created directories");
 
-            frontend.ShouldUpdatePrompt(syncDiffs, () => _ = DownloadModifiedFiles(syncDiffs), () => _ = SkipUpdate());
+            frontend.ShouldUpdatePrompt(syncDiffs, async () => await DownloadModifiedFiles(syncDiffs), async () => await SkipUpdate());
         }
         else
         {
@@ -251,6 +249,8 @@ public class ModSync(ISyncFrontend frontend, Version version, string hostname, I
             }
         }
 
+        // TODO: RestartRequired: False downloads
+
         var limiter = new SemaphoreSlim(8);
         logger.LogInfo($"Starting download of {filesToDownload.Count} files.");
 
@@ -282,7 +282,19 @@ public class ModSync(ISyncFrontend frontend, Version version, string hostname, I
             frontend.UpdateProgress(filesToDownload.Count - downloadTasks.Count);
         }
 
-        await Task.WhenAll(downloadTasks);
+        try
+        {
+            await Task.WhenAll(downloadTasks);
+        }
+        catch (DownloadException e)
+        {
+            if (!cts.IsCancellationRequested)
+            {
+                cts.Cancel();
+                frontend.DownloadErrorAlert(e.Message);
+            }
+        }
+
         downloadTasks.Clear();
 
         if (!cts.IsCancellationRequested)
@@ -313,17 +325,28 @@ public class ModSync(ISyncFrontend frontend, Version version, string hostname, I
         frontend.Cleanup();
     }
 
-    public async Task Start()
+    public async Task Run()
     {
         foreach (var task in GetTasks())
-            await task;
+        {
+            try
+            {
+                task.Start();
+                await task;
+            }
+            catch (Exception e)
+            {
+                logger.LogError($"There was an error performing request.\n{e.Message}\n{e.StackTrace}");
+                throw;
+            }
+        }
     }
 
     public List<Task> GetTasks()
     {
         return
         [
-            new Task(() => CheckPreviousUpdate()),
+            new Task(CheckPreviousUpdate),
             new Task(() => FetchVersion().Wait()),
             new Task(() => FetchSyncPaths().Wait()),
             new Task(RunMigrator),

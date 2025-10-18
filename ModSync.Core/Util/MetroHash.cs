@@ -1,7 +1,7 @@
-﻿namespace ModSync.Core;
-
-using System;
+﻿using System;
 using System.Runtime.CompilerServices;
+
+namespace ModSync.Core.Util;
 
 /// <summary>
 ///     Metro Hash 128

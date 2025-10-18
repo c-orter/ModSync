@@ -8,10 +8,12 @@ namespace ModSync.Tests;
 [TestFixture]
 public class AddedFilesTests
 {
-    private readonly ILogger logger = new TestLogger();
-    private readonly Comparator comparator;
+    private readonly ILogger logger = new TestUtils.TestLogger();
 
-    AddedFilesTests()
+    private Comparator comparator;
+
+    [OneTimeSetUp]
+    public void Init()
     {
         comparator = new Comparator(logger);
     }
@@ -48,10 +50,11 @@ public class AddedFilesTests
 [TestFixture]
 public class UpdatedFilesTests
 {
-    private readonly ILogger logger = new TestLogger();
-    private readonly Comparator comparator;
+    private readonly ILogger logger = new TestUtils.TestLogger();
+    private Comparator comparator;
 
-    UpdatedFilesTests()
+    [OneTimeSetUp]
+    public void Init()
     {
         comparator = new Comparator(logger);
     }
@@ -214,10 +217,11 @@ public class UpdatedFilesTests
 [TestFixture]
 public class RemovedFilesTests
 {
-    private readonly ILogger logger = new TestLogger();
-    private readonly Comparator comparator;
+    private readonly ILogger logger = new TestUtils.TestLogger();
+    private Comparator comparator;
 
-    RemovedFilesTests()
+    [OneTimeSetUp]
+    public void Init()
     {
         comparator = new Comparator(logger);
     }
@@ -266,15 +270,35 @@ public class RemovedFilesTests
 
         Assert.That(removedFiles, Is.EquivalentTo(new List<string> { @"BepInEx\plugins\Corter-ModSync.dll", @"BepInEx\plugins\OtherPlugin\OtherPlugin.dll" }));
     }
+
+    [Test]
+    public void TestEnforcedAsBlacklist()
+    {
+        var localModFiles = new Dictionary<string, ModFile> { { @"BepInEx\plugins\SAIN\SAIN.dll", new ModFile("1234567") } };
+
+        var remoteModFiles = new Dictionary<string, ModFile> { };
+
+        var previousRemoteModFiles = new Dictionary<string, ModFile> { };
+
+        var removedFiles = comparator.GetRemovedFiles(
+            new SyncPath(@"BepInEx\plugins\SAIN\SAIN.dll", enforced: true),
+            localModFiles,
+            remoteModFiles,
+            previousRemoteModFiles
+        );
+
+        Assert.That(removedFiles, Is.EquivalentTo(new List<string> { @"BepInEx\plugins\SAIN\SAIN.dll" }));
+    }
 }
 
 [TestFixture]
 public class CreatedDirectoriesTests
 {
-    private readonly ILogger logger = new TestLogger();
-    private readonly Comparator comparator;
+    private readonly ILogger logger = new TestUtils.TestLogger();
+    private Comparator comparator;
 
-    CreatedDirectoriesTests()
+    [OneTimeSetUp]
+    public void Init()
     {
         comparator = new Comparator(logger);
     }
@@ -298,10 +322,11 @@ public class CreatedDirectoriesTests
 [TestFixture]
 public class HashLocalFilesTests
 {
-    private readonly ILogger logger = new TestLogger();
-    private readonly Comparator comparator;
+    private readonly ILogger logger = new TestUtils.TestLogger();
+    private Comparator comparator;
 
-    HashLocalFilesTests()
+    [OneTimeSetUp]
+    public void Init()
     {
         comparator = new Comparator(logger);
     }
@@ -428,10 +453,11 @@ public class HashLocalFilesTests
 [TestFixture]
 public class CreateModFileTest
 {
-    private readonly ILogger logger = new TestLogger();
-    private readonly Comparator comparator;
+    private readonly ILogger logger = new TestUtils.TestLogger();
+    private Comparator comparator;
 
-    CreateModFileTest()
+    [OneTimeSetUp]
+    public void Init()
     {
         comparator = new Comparator(logger);
     }
@@ -509,10 +535,11 @@ public class CreateModFileTest
 [TestFixture]
 public class IsExcludedTest
 {
-    private readonly ILogger logger = new TestLogger();
-    private readonly Comparator comparator;
+    private readonly ILogger logger = new TestUtils.TestLogger();
+    private Comparator comparator;
 
-    IsExcludedTest()
+    [OneTimeSetUp]
+    public void Init()
     {
         comparator = new Comparator(logger);
     }

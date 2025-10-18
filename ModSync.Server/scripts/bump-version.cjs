@@ -25,8 +25,24 @@ sed(
 	"package.json",
 );
 
-pushd("-q", "../ModSync");
+pushd("-q", "../ModSync.Plugin/");
 sed("-i", `"${currentVersion}"`, `"${newVersion}"`, "Plugin.cs");
+sed(
+	"-i",
+	`"${currentVersion}"`,
+	`"${newVersion}"`,
+	"Properties/AssemblyInfo.cs",
+);
+popd("-q");
+
+sed(
+	"-i",
+	`"version": "${currentVersion}"`,
+	`"version": "${newVersion}"`,
+	"package.json",
+);
+
+pushd("-q", "../ModSync.Core/");
 sed(
 	"-i",
 	`"${currentVersion}"`,

@@ -1,0 +1,11 @@
+{
+  "ModSync.Core.Util.SyncPath": {
+    "Added": [
+      "BepInEx\\plugins\\SAIN.dll"
+    ],
+    "Updated": [],
+    "Removed": [],
+    "Created": [],
+    "Count": 1
+  }
+}

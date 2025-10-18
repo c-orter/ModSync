@@ -1,4 +1,4 @@
-﻿namespace ModSync.Core;
+﻿namespace ModSync.Core.Util;
 
 using System;
 using System.IO;

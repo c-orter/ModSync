@@ -8,6 +8,7 @@
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
         <MSBuildWarningsAsMessages>NU1702</MSBuildWarningsAsMessages>
+        <NoWarn>8618,8619,8625</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
@@ -16,6 +17,8 @@
         <PackageReference Include="NUnit" Version="3.14.0" />
         <PackageReference Include="NUnit.Analyzers" Version="3.9.0" />
         <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
+        <PackageReference Include="Snapper" Version="2.4.1" />
+        <PackageReference Include="Snapper.Nunit" Version="2.4.1" />
     </ItemGroup>
 
     <ItemGroup>

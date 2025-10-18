@@ -293,7 +293,7 @@ describe("router", async () => {
 			).rejects.toThrowError(
 				new HttpError(
 					404,
-					"Attempt to access non-existent path plugins/banana.dll",
+					"Corter-ModSync: Attempt to access non-existent path plugins/banana.dll",
 				),
 			);
 		});
